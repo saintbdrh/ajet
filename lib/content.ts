@@ -10,11 +10,11 @@ export type MediaSlot = {
   alt: Localized;
 };
 export const defaultMediaSlots: MediaSlot[] = [
-  { key: "hero", imageKey: "/img/hero.jpg", focalX: 50, focalY: 50, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" } },
+  { key: "hero", imageKey: "/img/ajet-hero-poster.png", focalX: 50, focalY: 50, alt: { mn: "Ajet нисдэг тэрэгний дүрслэл", en: "Ajet helicopter cinematic render" } },
   { key: "membership", imageKey: "/img/lake.jpg", focalX: 50, focalY: 50, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" } },
   { key: "corporate", imageKey: "/img/mountains.jpg", focalX: 50, focalY: 50, alt: { mn: "Уулсын оргил", en: "Mountain peaks" } },
   { key: "journey-01", imageKey: "/img/lake.jpg", focalX: 50, focalY: 52, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" } },
-  { key: "journey-02", imageKey: "/img/hero.jpg", focalX: 58, focalY: 50, alt: { mn: "Нисдэг тэрэгний бүхээг", en: "A helicopter in flight" } },
+  { key: "journey-02", imageKey: "/img/ajet-aircraft-side.png", focalX: 58, focalY: 50, alt: { mn: "Нисдэг тэрэгний бүхээг", en: "A helicopter in flight" } },
   { key: "journey-03", imageKey: "/img/hero.jpg", focalX: 65, focalY: 50, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" } },
   { key: "journey-04", imageKey: "/img/mountains.jpg", focalX: 50, focalY: 48, alt: { mn: "Уулсын оргил", en: "Mountain peaks" } },
   { key: "journey-05", imageKey: "/img/lake.jpg", focalX: 50, focalY: 44, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" } },
@@ -24,6 +24,23 @@ export const defaultMediaSlots: MediaSlot[] = [
 
 export function mediaUrl(imageKey: string): string {
   return imageKey.startsWith("/img/") ? imageKey : `/media/${imageKey}`;
+}
+
+/**
+ * Picks `count` media slots whose imagery varies from tile to tile, so a preview
+ * build with only a handful of photographs never shows the same picture twice in
+ * a row. Order follows the slots table.
+ */
+export function variedSlots(slots: MediaSlot[], count: number): MediaSlot[] {
+  const seen = new Set<string>();
+  const unique = slots.filter((slot) => {
+    if (seen.has(slot.imageKey)) return false;
+    seen.add(slot.imageKey);
+    return true;
+  });
+  const pool = unique.length > 0 ? unique : slots;
+  if (pool.length === 0) return [];
+  return Array.from({ length: count }, (_, index) => pool[index % pool.length]);
 }
 
 export async function getMediaSlots(): Promise<MediaSlot[]> {

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import "../globals.css";
+import "../premium.css";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (

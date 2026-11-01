@@ -14,20 +14,48 @@ export default async function Quote({ params }: { params: Promise<{ locale: stri
   if (!isLocale(locale)) notFound();
   const [copy, dest, fleet] = await Promise.all([getSiteCopy(locale), getDestinations(), getFleet()]);
   const d = t(locale, copy);
+  const phone = copy.contactPhone?.trim();
+  const showPhone = !!phone && !phone.includes("[");
+
   return (
     <>
-      <section className="pagehero"><div className="wrap">
-        <p className="eyebrow">{d.hero.kicker}</p>
-        <h1 style={{ maxWidth: "18ch" }}>{d.form.title}</h1>
-        <p className="lead">{d.hero.sub}</p>
-      </div></section>
-      <section className="wrap sec" style={{ paddingTop: "3rem" }}>
-        <QuoteForm
-          d={d.form}
-          locale={locale}
-          places={dest.map((p) => p.name[locale])}
-          aircraft={fleet.filter((item) => !item.placeholder).map((item) => item.name)}
-        />
+      <header className="pagehead pagehead--quote" id="estimate">
+        <div className="wrap">
+          <p className="eyebrow">{d.cta.kicker}</p>
+          <h1>{d.form.title}</h1>
+          <p className="lede">{d.cta.sub}</p>
+        </div>
+      </header>
+
+      <section className="section">
+        <div className="wrap quote__grid">
+          <aside className="quote__aside">
+            <p className="eyebrow">{d.credentials.label}</p>
+            <ul className="credrow credrow--stack">
+              {d.credentials.items.map((item) => <li key={item}>{item}</li>)}
+            </ul>
+            <p className="note note--block">{d.credentials.note}</p>
+            <ul className="quote__points">
+              {d.safety.points.slice(0, 4).map((point) => <li key={point}><span aria-hidden="true">✓</span>{point}</li>)}
+            </ul>
+            {showPhone && phone && (
+              <p className="quote__phone">
+                <span>{d.hero.phone}</span>
+                <a href={`tel:${phone.replace(/[^\d+]/g, "")}`}>{phone}</a>
+              </p>
+            )}
+          </aside>
+
+          <div className="quote__form">
+            <QuoteForm
+              d={d.form}
+              locale={locale}
+              places={dest.map((p) => p.name[locale])}
+              aircraft={fleet.filter((item) => !item.placeholder).map((item) => item.name)}
+            />
+            <p className="note note--block">{d.foot.note}</p>
+          </div>
+        </div>
       </section>
     </>
   );

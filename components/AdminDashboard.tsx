@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState, type FormEvent } from "react";
+import { previewQuotes } from "@/lib/admin-preview";
 import { cmsFields, defaultCopyValue } from "@/lib/cms-fields";
 import { t, type Locale } from "@/lib/i18n";
 import { adminConfirm, adminStatusText, adminText, cmsFieldText, cmsSectionText } from "@/lib/admin-dictionary";
@@ -87,9 +88,21 @@ function formatAmount(minor: number, currency: string, locale: string) {
     .format(minor / (10 ** digits));
 }
 
-export default function AdminDashboard({ email, role, logoutUrl }: { email: string; role: AdminRole; logoutUrl: string }) {
-  const [tab, setTab] = useState<Tab>(role === "dispatcher" ? "quotes" : "content");
-  const [locale, setLocale] = useState<Locale>("mn");
+export default function AdminDashboard({ email, role, logoutUrl, preview = false }: { email: string; role: AdminRole; logoutUrl: string; preview?: boolean }) {
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  async function adminRequest<T>(url: string, init?: RequestInit): Promise<T> {
+    if (!preview) return request<T>(url, init);
+    if (init?.method && init.method !== "GET") throw new Error("Design preview: changes are disabled. Open the authenticated admin to save.");
+    const section = url.split("?")[0].split("/").pop();
+    const response = section === "content" ? { ok: true, values: { mn: {}, en: {} } }
+      : section === "quotes" ? { ok: true, items: previewQuotes, revisions: [], history: [], aircraft: [], publishedPrices: [] }
+      : section === "photos" ? { ok: true, items: defaultMediaSlots }
+      : { ok: true, items: [] };
+    return response as T;
+  }
+  const [tab, setTab] = useState<Tab>(role === "content_editor" ? "content" : "quotes");
+  const [locale, setLocale] = useState<Locale>(preview ? "en" : "mn");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -126,32 +139,32 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     const load = async () => {
       try {
         if (tab === "content") {
-          const response = await request<CopyResponse>("/api/admin/content");
+          const response = await adminRequest<CopyResponse>("/api/admin/content");
           const next = { mn: { ...response.values.mn }, en: { ...response.values.en } };
           if (active) {
             setCopy(next);
             setSavedCopy({ mn: { ...next.mn }, en: { ...next.en } });
           }
         } else if (tab === "photos") {
-          const response = await request<ItemsResponse<AdminPhoto>>("/api/admin/photos");
+          const response = await adminRequest<ItemsResponse<AdminPhoto>>("/api/admin/photos");
           if (active) setPhotos(response.items.length ? response.items : defaultMediaSlots);
         } else if (tab === "prices") {
           const [priceResponse, destinationResponse] = await Promise.all([
-            request<ItemsResponse<AdminPrice>>("/api/admin/prices"),
-            request<ItemsResponse<AdminDestination>>("/api/admin/destinations"),
+            adminRequest<ItemsResponse<AdminPrice>>("/api/admin/prices"),
+            adminRequest<ItemsResponse<AdminDestination>>("/api/admin/destinations"),
           ]);
           if (active) {
             setPrices(priceResponse.items);
             setPriceDestinations(destinationResponse.items);
           }
         } else if (tab === "aircraft") {
-          const response = await request<ItemsResponse<AdminAircraft>>("/api/admin/aircraft");
+          const response = await adminRequest<ItemsResponse<AdminAircraft>>("/api/admin/aircraft");
           if (active) setAircraft(response.items);
         } else if (tab === "destinations") {
-          const response = await request<ItemsResponse<AdminDestination>>("/api/admin/destinations");
+          const response = await adminRequest<ItemsResponse<AdminDestination>>("/api/admin/destinations");
           if (active) setDestinations(response.items);
         } else {
-          const response = await request<ItemsResponse<AdminQuote> & {
+          const response = await adminRequest<ItemsResponse<AdminQuote> & {
             revisions: QuoteRevision[];
             history: QuoteHistory[];
             aircraft: DispatchAircraft[];
@@ -181,6 +194,13 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     ),
   );
 
+  useEffect(() => {
+    if (!hasUnsavedCopy) return;
+    const protectChanges = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", protectChanges);
+    return () => window.removeEventListener("beforeunload", protectChanges);
+  }, [hasUnsavedCopy]);
+
   async function saveContent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -188,7 +208,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     setNotice("");
     try {
       for (const language of ["mn", "en"] as const) {
-        await request("/api/admin/content", {
+        await adminRequest("/api/admin/content", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ locale: language, values: copy[language] }),
@@ -211,7 +231,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
       setError("");
       setNotice("");
       try {
-        await request("/api/admin/photos", {
+        await adminRequest("/api/admin/photos", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -223,7 +243,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
             altEn: photoForm.alt.en,
           }),
         });
-        const response = await request<ItemsResponse<AdminPhoto>>("/api/admin/photos");
+        const response = await adminRequest<ItemsResponse<AdminPhoto>>("/api/admin/photos");
         setPhotos(response.items);
         setPhotoForm(null);
         setNotice(adminText(locale, "saved"));
@@ -251,12 +271,12 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     setError("");
     setNotice("");
     try {
-      await request("/api/admin/history", {
+      await adminRequest("/api/admin/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "restore", entityType: "photo", entityId: item.key, revisionId: item.previousRevisionId }),
       });
-      const response = await request<ItemsResponse<AdminPhoto>>("/api/admin/photos");
+      const response = await adminRequest<ItemsResponse<AdminPhoto>>("/api/admin/photos");
       setPhotos(response.items);
       setPhotoForm(null);
       setNotice(adminText(locale, "saved"));
@@ -296,12 +316,12 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     setError("");
     setNotice("");
     try {
-      await request("/api/admin/prices", {
+      await adminRequest("/api/admin/prices", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...priceForm, id, amount, currency }),
       });
-      const response = await request<ItemsResponse<AdminPrice>>("/api/admin/prices");
+      const response = await adminRequest<ItemsResponse<AdminPrice>>("/api/admin/prices");
       setPrices(response.items);
       setPriceForm(null);
       setNotice(adminText(locale, "saved"));
@@ -332,7 +352,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     [swapped[index], swapped[target]] = [swapped[target], swapped[index]];
     setBusy(true);
     try {
-      await request("/api/admin/prices", {
+      await adminRequest("/api/admin/prices", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -340,7 +360,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
           items: swapped.map((price, orderIndex) => ({ id: price.id, orderIndex })),
         }),
       });
-      const response = await request<ItemsResponse<AdminPrice>>("/api/admin/prices");
+      const response = await adminRequest<ItemsResponse<AdminPrice>>("/api/admin/prices");
       setPrices(response.items);
       setNotice(adminText(locale, "saved"));
     } catch (cause) {
@@ -363,12 +383,12 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     setError("");
     setNotice("");
     try {
-      await request("/api/admin/aircraft", {
+      await adminRequest("/api/admin/aircraft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(item),
       });
-      const response = await request<ItemsResponse<AdminAircraft>>("/api/admin/aircraft");
+      const response = await adminRequest<ItemsResponse<AdminAircraft>>("/api/admin/aircraft");
       setAircraft(response.items);
       setAircraftForm(null);
       setNotice(adminText(locale, "saved"));
@@ -393,12 +413,12 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     setError("");
     setNotice("");
     try {
-      await request("/api/admin/destinations", {
+      await adminRequest("/api/admin/destinations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(item),
       });
-      const response = await request<ItemsResponse<AdminDestination>>("/api/admin/destinations");
+      const response = await adminRequest<ItemsResponse<AdminDestination>>("/api/admin/destinations");
       setDestinations(response.items);
       setDestinationForm(null);
       setNotice(adminText(locale, "saved"));
@@ -419,12 +439,12 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     setError("");
     setNotice("");
     try {
-      await request(`/api/admin/${kind}?id=${encodeURIComponent(id)}${permanent ? "&permanent=true" : ""}`, { method: "DELETE" });
+      await adminRequest(`/api/admin/${kind}?id=${encodeURIComponent(id)}${permanent ? "&permanent=true" : ""}`, { method: "DELETE" });
       if (kind === "aircraft") {
-        const response = await request<ItemsResponse<AdminAircraft>>("/api/admin/aircraft");
+        const response = await adminRequest<ItemsResponse<AdminAircraft>>("/api/admin/aircraft");
         setAircraft(response.items);
       } else {
-        const response = await request<ItemsResponse<AdminDestination>>("/api/admin/destinations");
+        const response = await adminRequest<ItemsResponse<AdminDestination>>("/api/admin/destinations");
         setDestinations(response.items);
       }
       setNotice(adminText(locale, permanent ? "permanentDelete" : "hide"));
@@ -441,12 +461,12 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     setNotice("");
     setBusy(true);
     try {
-      const result = await request<{ status?: string; notificationPending?: boolean }>("/api/admin/quotes", {
+      const result = await adminRequest<{ status?: string; notificationPending?: boolean }>("/api/admin/quotes", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const response = await request<ItemsResponse<AdminQuote> & {
+      const response = await adminRequest<ItemsResponse<AdminQuote> & {
         revisions: QuoteRevision[];
         history: QuoteHistory[];
         aircraft: DispatchAircraft[];
@@ -475,7 +495,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     setNotice("");
     setBusy(true);
     try {
-      const result = await request<{ revision: number }>("/api/admin/quotes", {
+      const result = await adminRequest<{ revision: number }>("/api/admin/quotes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -492,7 +512,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
       setQuoteTerms("");
       setQuoteExpiry("");
       setNotice(adminText(locale, "quoteSent").replace("{revision}", String(result.revision)));
-      const response = await request<ItemsResponse<AdminQuote> & {
+      const response = await adminRequest<ItemsResponse<AdminQuote> & {
         revisions: QuoteRevision[];
         history: QuoteHistory[];
         aircraft: DispatchAircraft[];
@@ -549,8 +569,18 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
     return adminText(locale, photoLabels[index] ?? "photos");
   };
 
+  const matchesQuery = (value: string) => value.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+  const visibleQuotes = quotes.filter((item) => (statusFilter === "all" || item.status === statusFilter) && matchesQuery([item.name, item.id, item.email, item.phone, item.origin, item.destination, item.organization].join(" ")));
+  const visibleFields = cmsFields.filter((field) => matchesQuery([field.label, field.key, cmsFieldText(locale, field.key, field.label), cmsSectionText(locale, field.group)].join(" ")));
+  const tabDescriptions: Record<Tab, string> = locale === "mn" ? {
+    quotes: "Нислэгийн хүсэлт, үнийн санал, баталгаажуулалт.", content: "Вэбсайтын Монгол, Англи текстийг нэг дор засах.",
+    photos: "Вэбсайтын зураг болон харагдах хэсгийг удирдах.", prices: "Нийтлэх үнэ болон үнийн тайлбар.", aircraft: "Нисдэг тэрэгний мэдээлэл, зураг, нийтлэлт.", destinations: "Чиглэл, зураг, байршлын мэдээлэл.",
+  } : {
+    quotes: "Every journey starts here. Review requests and manage proposals.", content: "Your website, in your words. Edit Mongolian and English together.",
+    photos: "Curate the imagery that tells your story.", prices: "Manage published starting prices and their terms.", aircraft: "Aircraft details, photography and publication controls.", destinations: "The places you fly. Manage imagery and destination details.",
+  };
   return (
-    <div className="admin-shell">
+    <div className="admin-shell admin-workspace">
       <header className="admin-top">
         <a className="brand" href={`/${locale}`}><span className="brand-mark" aria-hidden="true"><i /></span><span>Ajet<small>{adminText(locale, "admin")}</small></span></a>
         <div className="admin-user">
@@ -559,19 +589,26 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
         <a href={logoutUrl}>{adminText(locale, "logout")}</a>
         </div>
       </header>
+      <aside className="admin-side">
+        <p className="admin-side-label">{locale === "mn" ? "АЖЛЫН ТАЛБАР" : "WORKSPACE"}</p>
+        <nav aria-label={adminText(locale, "admin")}>
+          {[...tabs].sort((a, b) => (a.id === "quotes" ? -1 : b.id === "quotes" ? 1 : 0)).map((item) => <button type="button" key={item.id} aria-current={tab === item.id ? "page" : undefined} onClick={() => {
+            if (tab === "content" && hasUnsavedCopy && !window.confirm(adminText(locale, "contentUnsaved"))) return;
+            setTab(item.id); setQuery(""); setStatusFilter("all"); setNotice("");
+          }}><span className="admin-nav-icon" aria-hidden="true">{({ quotes: "↗", content: "Aa", photos: "▧", prices: "₮", aircraft: "✧", destinations: "◎" })[item.id]}</span>{adminText(locale, item.label)}<span className="admin-nav-arrow" aria-hidden="true">›</span></button>)}
+        </nav>
+        <div className="admin-side-bottom"><span className="live-dot" />{adminText(locale, role)}<p>AJET · {locale === "mn" ? "Удирдлагын систем" : "Website & operations"}</p><a href={`/${locale}`} target="_blank" rel="noreferrer">{adminText(locale, "viewHome")} ↗</a></div>
+      </aside>
       <main className="admin-main">
         <div className="admin-heading">
-          <div><p className="eyebrow">AJET · {adminText(locale, role)}</p><h1>{adminText(locale, "admin")}</h1><p>{adminText(locale, "pageIntro")}</p></div>
+          <div><p className="eyebrow">AJET · {adminText(locale, role)}</p><h1>{adminText(locale, tab)}</h1><p>{tabDescriptions[tab]}</p></div>
           <a href={`/${locale}`} target="_blank" rel="noreferrer" className="btn ghost">{adminText(locale, "viewHome")} ↗</a>
         </div>
-        <nav className="admin-tabs" aria-label={adminText(locale, "admin")}>
-          {tabs.map((item) => <button key={item.id} type="button" className={tab === item.id ? "active" : ""} onClick={() => {
-            if (tab === "content" && hasUnsavedCopy && !window.confirm(adminText(locale, "contentUnsaved"))) return;
-            setTab(item.id); setNotice("");
-          }}>
-            {adminText(locale, item.label)}{item.id === "quotes" && quotes.filter((quote) => quote.status === "requested").length > 0 && <span className="admin-badge">{quotes.filter((quote) => quote.status === "requested").length}</span>}
-          </button>)}
-        </nav>
+        {preview && <p className="admin-preview-banner">{locale === "mn" ? "ЗАГВАРЫН УРЬДЧИЛСАН ХАРАХ · Жишээ өгөгдөл. Өөрчлөлт хадгалагдахгүй." : "DESIGN PREVIEW · Illustrative data. Changes are disabled; no live records are connected."}</p>}
+        <div className="admin-toolbar">
+          <label className="admin-search"><span aria-hidden="true">⌕</span><span className="sr-only">{locale === "mn" ? "Хайх" : "Search"}</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={locale === "mn" ? "Энэ хэсэгт хайх…" : "Search this section…"} /></label>
+          <button type="button" className="admin-refresh" disabled={loading || busy || hasUnsavedCopy} onClick={() => setRevisionRefresh((value) => value + 1)}>↻ {locale === "mn" ? "Шинэчлэх" : "Refresh"}</button>
+        </div>
         {error && <p className="admin-alert error" role="alert">{error}</p>}
         {notice && <p className="admin-alert success" role="status">{notice} <a href={viewPath} target="_blank" rel="noreferrer">{adminText(locale, "view")} ↗</a></p>}
         {loading ? <div className="admin-empty">{adminText(locale, "loading")}</div> : <>
@@ -581,9 +618,9 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
                 <div><h2>{adminText(locale, "content")}</h2><p>{adminText(locale, "contentIntro")}</p></div>
               </div>
               <form className="admin-form" onSubmit={saveContent}>
-                {[...new Set(cmsFields.map((field) => field.group))].map((group) => <details className="admin-copy-group" key={group} open={group === "Hero"}>
-                  <summary>{cmsSectionText(locale, group)}<span>{cmsFields.filter((field) => field.group === group).length}</span></summary>
-                  <div className="cms-field-list">{cmsFields.filter((field) => field.group === group).map((field) => <fieldset className="cms-field-pair" key={field.key}>
+                {[...new Set(visibleFields.map((field) => field.group))].map((group) => <details className="admin-copy-group" key={group} open={query.length > 0 || group === "Hero"}>
+                  <summary>{cmsSectionText(locale, group)}<span>{visibleFields.filter((field) => field.group === group).length}</span></summary>
+                  <div className="cms-field-list">{visibleFields.filter((field) => field.group === group).map((field) => <fieldset className="cms-field-pair" key={field.key}>
                     <legend>{cmsFieldText(locale, field.key, field.label)}</legend>
                     {(["mn", "en"] as const).map((language) => <label key={language}>{adminText(locale, language === "mn" ? "mongolian" : "english")}
                       {field.multiline
@@ -606,7 +643,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
             <section className="admin-panel">
               <div className="admin-panel-heading"><div><h2>{adminText(locale, "photos")}</h2><p>{adminText(locale, "photoIntro")}</p></div></div>
               {locale === "mn" && <p className="admin-review-note">{adminText(locale, "languageReview")}</p>}
-              <div className="photo-slot-grid">{orderedPhotos.map((item) => (
+              <div className="photo-slot-grid">{orderedPhotos.filter((item) => matchesQuery(photoLabel(item.key))).map((item) => (
                 <button className="photo-slot-card" type="button" key={item.key} onClick={() => setPhotoForm(item)}>
                   <span className="photo-slot-thumb"><img src={mediaUrl(item.imageKey)} alt={item.alt[locale]} style={{ objectPosition: `${item.focalX}% ${item.focalY}%` }} /></span>
                   <strong>{photoLabel(item.key)}</strong>
@@ -640,7 +677,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
                 <button className="btn sm" type="button" onClick={() => setPriceForm(createPriceDraft())}>{adminText(locale, "addPrice")}</button>
               </div>
               {prices.length === 0 && <p className="admin-empty">{adminText(locale, "noPrices")}</p>}
-              <div className="admin-card-list">{prices.map((item, index) => <article className="admin-item" key={item.id}>
+              <div className="admin-card-list">{prices.map((item, index) => ({ item, index })).filter(({ item }) => matchesQuery(`${item.labelMn} ${item.labelEn}`)).map(({ item, index }) => <article className="admin-item" key={item.id}>
                 <div>
                   <span className={`admin-state${item.isPublished ? " published" : ""}`}>{adminText(locale, item.isPublished ? "published" : "hidden")}</span>
                   <h3>{locale === "mn" ? item.labelMn : item.labelEn}</h3>
@@ -690,7 +727,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
               <div className="admin-panel-heading"><div><h2>{adminText(locale, "aircraft")}</h2><p>{adminText(locale, "manageFleet")}</p></div>
                 <button className="btn sm" type="button" onClick={() => setAircraftForm(blankAircraft(aircraft.length))}>{adminText(locale, "addAircraft")}</button>
               </div>
-              <div className="admin-card-list">{aircraft.map((item) => <article className="admin-item" key={item.id}>
+              <div className="admin-card-list">{aircraft.filter((item) => matchesQuery(item.name)).map((item) => <article className="admin-item" key={item.id}>
                 <div><span className={`admin-state${item.isPublished ? " published" : ""}`}>{adminText(locale, item.isPublished ? "published" : "hidden")}</span> <span className={`admin-state${item.specificationsVerified ? " published" : ""}`}>{item.specificationsVerified ? adminText(locale, "checkedSpecifications") : adminText(locale, "specificationsPending")}</span><h3>{item.name}</h3><p>{item.seats ? `${item.seats} ${adminText(locale, "aircraftSeats")}` : adminText(locale, "noSeating")}</p><small>{adminText(locale, "specificationsHelp")}</small></div>
                 <div className="admin-item-actions"><button type="button" className="admin-link" onClick={() => setAircraftForm(item)}>{adminText(locale, "edit")}</button><button type="button" className="admin-link danger" disabled={busy} onClick={() => void deleteItem("aircraft", item.id, item.name)}>{adminText(locale, "hide")}</button>{role === "owner" && <button type="button" className="admin-link danger" disabled={busy} onClick={() => void deleteItem("aircraft", item.id, item.name, true)}>{adminText(locale, "permanentDelete")}</button>}<AdminHistory entityType="aircraft" entityId={item.id} locale={locale} onRestored={() => setRevisionRefresh((value) => value + 1)} /></div>
               </article>)}</div>
@@ -726,7 +763,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
               <div className="admin-panel-heading"><div><h2>{adminText(locale, "destinations")}</h2><p>{adminText(locale, "manageDestinations")}</p></div>
                 <button className="btn sm" type="button" onClick={() => setDestinationForm(blankDestination(destinations.length))}>{adminText(locale, "addDestination")}</button>
               </div>
-              <div className="admin-card-list">{destinations.map((item) => <article className="admin-item" key={item.id}>
+              <div className="admin-card-list">{destinations.filter((item) => matchesQuery(`${item.nameMn} ${item.nameEn}`)).map((item) => <article className="admin-item" key={item.id}>
                 <div><span className={`admin-state${item.isPublished ? " published" : ""}`}>{adminText(locale, item.isPublished ? "published" : "hidden")}</span> <span className={`admin-state${item.coordinatesVerified ? " published" : ""}`}>{adminText(locale, item.coordinatesVerified ? "checkedCoordinates" : "coordinatesPending")}</span><h3>{item.nameMn} <small>· {item.nameEn}</small></h3><p>{adminText(locale, "coordinateHelp")}</p></div>
                 <div className="admin-item-actions"><button type="button" className="admin-link" onClick={() => setDestinationForm(item)}>{adminText(locale, "edit")}</button><button type="button" className="admin-link danger" disabled={busy} onClick={() => void deleteItem("destinations", item.id, item.nameMn)}>{adminText(locale, "hide")}</button>{role === "owner" && <button type="button" className="admin-link danger" disabled={busy} onClick={() => void deleteItem("destinations", item.id, item.nameMn, true)}>{adminText(locale, "permanentDelete")}</button>}<AdminHistory entityType="destination" entityId={item.id} locale={locale} onRestored={() => setRevisionRefresh((value) => value + 1)} /></div>
               </article>)}</div>
@@ -760,9 +797,16 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
           {tab === "quotes" && (
             <section className="admin-panel">
               <div className="admin-panel-heading"><div><h2>{adminText(locale, "quotes")}</h2><p>{adminText(locale, "manageRequests")}</p></div><span className="admin-count">{quotes.length} {adminText(locale, "recentRequests")}</span></div>
-              {quotes.length === 0 ? <div className="admin-empty">{adminText(locale, "noRequests")}</div> : <div className="admin-table-wrap"><table className="admin-table">
+              <div className="request-summary">{[
+                ["requested", locale === "mn" ? "Шинэ хүсэлт" : "New requests"],
+                ["in_review", locale === "mn" ? "Хянаж байна" : "In review"],
+                ["quoted", locale === "mn" ? "Санал илгээсэн" : "Proposals sent"],
+                ["approved", locale === "mn" ? "Зөвшөөрсөн" : "Client approved"],
+              ].map(([status, label]) => <button type="button" key={status} aria-pressed={statusFilter === status} onClick={() => setStatusFilter(statusFilter === status ? "all" : status)}><span>{label}</span><strong>{quotes.filter((item) => item.status === status).length.toString().padStart(2, "0")}</strong><span className="summary-arrow" aria-hidden="true">↗</span></button>)}</div>
+              <div className="request-filters" role="group" aria-label={locale === "mn" ? "Төлөвөөр шүүх" : "Filter by status"}>{["all", "requested", "in_review", "quoted", "approved", "confirmed", "declined", "expired", "closed"].map((status) => <button type="button" key={status} aria-pressed={statusFilter === status} onClick={() => setStatusFilter(status)}>{status === "all" ? (locale === "mn" ? "Бүгд" : "All requests") : adminStatusText(locale, status)}</button>)}</div>
+              {visibleQuotes.length === 0 ? <div className="admin-empty">{query || statusFilter !== "all" ? (locale === "mn" ? "Тохирох хүсэлт олдсонгүй. Хайлтаа өөрчилнө үү." : "No matching requests. Try another search or status.") : adminText(locale, "noRequests")}</div> : <div className="admin-table-wrap"><table className="admin-table">
                 <thead><tr><th>{adminText(locale, "request")}</th><th>{adminText(locale, "routeAndDate")}</th><th>{adminText(locale, "contact")}</th><th>{adminText(locale, "passengers")}</th><th>{adminText(locale, "workflow")}</th></tr></thead>
-                <tbody>{quotes.map((item) => {
+                <tbody>{visibleQuotes.map((item) => {
                   const quoteRevisions = revisions.filter((revision) => revision.quote_id === item.id);
                   const quoteHistory = history.filter((entry) => entry.quote_id === item.id);
                   const confirm = confirmation[item.id] ?? { aircraftId: "", note: "", approved: false };
@@ -774,7 +818,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
                         <td>{item.name}<small><a href={`tel:${item.phone}`}>{item.phone}</a></small>{item.email && <small><a href={`mailto:${item.email}`}>{item.email}</a></small>}</td>
                         <td>{item.passengers}</td>
                         <td>
-                          <strong>{adminStatusText(locale, item.status)}</strong>
+                          <strong className={`request-status status-${item.status}`}>{adminStatusText(locale, item.status)}</strong>
                           {item.status === "requested" && <button type="button" className="admin-link" disabled={busy} onClick={() => void quoteAction({ action: "review", id: item.id })}>{adminText(locale, "startReview")}</button>}
                           {(item.status === "in_review" || item.status === "quoted") && (
                             <button type="button" className="admin-link" onClick={() => startQuote(item)}>

@@ -1,143 +1,340 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import JourneyExperience from "@/components/JourneyExperience";
+import AircraftPortrait from "@/components/AircraftPortrait";
 import Reveal from "@/components/Reveal";
-import { getDestinations, getFleet, getMediaSlots, getPricing, getSiteCopy, mediaUrl } from "@/lib/content";
+import Value from "@/components/Value";
+import { getDestinations, getFleet, getMediaSlots, getPricing, getSiteCopy, mediaUrl, variedSlots } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
 import { formatMinorAmount } from "@/lib/money";
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const [copy, fleet, dest, slots, prices] = await Promise.all([getSiteCopy(locale), getFleet(), getDestinations(), getMediaSlots(), getPricing()]);
+  const [copy, fleet, dest, slots, prices] = await Promise.all([
+    getSiteCopy(locale), getFleet(), getDestinations(), getMediaSlots(), getPricing(),
+  ]);
   const d = t(locale, copy);
   const slot = (key: string) => slots.find((item) => item.key === key)!;
-  const journeyScenes = d.journey.map((scene, index) => {
-    const photo = slot(`journey-${String(index + 1).padStart(2, "0")}`);
-    return { ...scene, image: mediaUrl(photo.imageKey), position: `${photo.focalX}% ${photo.focalY}%` };
-  });
+  const hero = slot("hero");
+  const usesDefaultFilm = ["/img/hero.jpg", "/img/ajet-hero-poster.png"].includes(hero.imageKey);
+  const published = fleet.filter((aircraft) => !aircraft.placeholder);
+  const gallery = variedSlots(slots, 6);
+  const destinationFallback = variedSlots(slots, Math.max(dest.length, 1));
+  const fleetFallback = variedSlots(slots, Math.max(published.length, 1));
+
   return (
     <>
       <section className="hero">
-        <div className="hero-intro wrap">
-          <div className="hero-copy">
-            <p className="eyebrow">{d.hero.kicker}</p>
-            <h1>{d.hero.title}</h1>
-            <p className="lead">{d.hero.sub}</p>
+        <div className="hero__media">
+          {usesDefaultFilm ? (
+            <video className="hero__film" autoPlay muted loop playsInline poster="/img/ajet-hero-poster.png" aria-hidden="true">
+              <source src="/films/ajet-hero.mp4" type="video/mp4" />
+            </video>
+          ) : (
+            <img
+              src={mediaUrl(hero.imageKey)}
+              alt={hero.alt[locale]}
+              fetchPriority="high"
+              style={{ objectPosition: `${hero.focalX}% ${hero.focalY}%` }}
+            />
+          )}
+        </div>
+        <div className="hero__scrim" aria-hidden="true" />
+
+        <div className="hero__inner wrap">
+          <p className="eyebrow">{d.hero.kicker}</p>
+          <h1>{d.hero.title}</h1>
+          <p className="hero__sub">{d.hero.sub}</p>
+          <div className="hero__actions">
+            <Link href={`/${locale}/quote`} className="btn">{d.hero.cta}<span aria-hidden="true">↗</span></Link>
+            <Link href={`/${locale}/quote#estimate`} className="btn btn--ghost">{d.hero.cta2}</Link>
           </div>
         </div>
-        <div className="hero-stage">
-          <div className="bgimg" aria-hidden="true"><img src={mediaUrl(slot("hero").imageKey)} alt="" fetchPriority="high" style={{ objectPosition: `${slot("hero").focalX}% ${slot("hero").focalY}%` }} /></div>
-          <div className="veil" aria-hidden="true" />
-          <div className="hero-stage-content">
-            <p className="hero-caption">{locale === "mn" ? "ТУСГАЙ НИСЛЭГ · МОНГОЛ" : "PRIVATE CHARTER · MONGOLIA"}</p>
-            <div className="cta">
-              <Link href={`/${locale}/quote`} className="btn">{d.hero.cta}<span aria-hidden="true">↗</span></Link>
-              <Link href={`/${locale}/fleet`} className="btn ghost">{d.hero.cta2}</Link>
-            </div>
+
+        <div className="hero__creds">
+          <div className="wrap">
+            <span className="hero__creds-label">{d.credentials.label}</span>
+            <ul>
+              {d.credentials.items.map((item) => <li key={item}><Value>{item}</Value></li>)}
+            </ul>
           </div>
-          <a className="scroll-cue" href="#experience"><span />{locale === "mn" ? "Доош гүйлгэх" : "Scroll to explore"}</a>
         </div>
       </section>
 
-      {prices.length > 0 && <section className="sec band" aria-labelledby="public-prices">
+      <section className="statband" aria-label={d.credentials.label}>
         <div className="wrap">
-          <Reveal direction="left"><p className="eyebrow">{locale === "mn" ? "ҮНИЙН МЭДЭЭЛЭЛ" : "INDICATIVE PRICING"}</p><h2 id="public-prices">{locale === "mn" ? "Эхлэх үнэ" : "Starting prices"}</h2></Reveal>
-          <div className="pricing-list">{prices.map((price) => (
-            <article className="pricing-item" key={price.id}>
-              <div><h3>{price.label[locale]}</h3>{price.note[locale] && <p>{price.note[locale]}</p>}</div>
-              <strong>{locale === "mn" ? "Үүнээс эхэлнэ" : "From"} {formatMinorAmount(price.amountMinor, price.currency, locale)}</strong>
-            </article>
-          ))}</div>
-          <p className="sample">{d.priceDisclaimer}</p>
-        </div>
-      </section>}
-
-      <section className="stats" id="experience"><div className="wrap">
-        {d.stats.map(([b, s]) => <div className="stat rv" key={s}><b>{b}</b><span>{s}</span></div>)}
-      </div></section>
-
-      <JourneyExperience locale={locale} scenes={journeyScenes} kicker={d.journeyKicker} intro={d.journeyIntro} />
-
-      <section className="sec"><div className="wrap">
-        <Reveal direction="left"><p className="eyebrow">{d.how.kicker}</p><h2>{d.how.title}</h2></Reveal>
-        <ol className="steps">{d.how.steps.map(([h, p]) => (
-          <li className="rv" key={h}><strong>{h}</strong><span>{p}</span></li>))}</ol>
-      </div></section>
-
-      <section className="sec band"><div className="wrap">
-        <div className="sec head">
-          <Reveal direction="left"><p className="eyebrow">{d.fleet.kicker}</p><h2>{d.fleet.title}</h2></Reveal>
-          <Reveal direction="right"><p>{d.fleet.intro}</p><Link href={`/${locale}/fleet`} className="textlink">{d.more}</Link></Reveal>
-        </div>
-        <div className="fleet-grid">{fleet.slice(0, 3).map((a, i) => (
-          <article className="ac rv" key={a.id}>
-            <div className="ph"><img src={a.imageKey ? mediaUrl(a.imageKey) : mediaUrl(slot(["hero", "corporate", "membership"][i % 3]).imageKey)} alt={a.alt[locale]} loading="lazy" style={{ objectPosition: `${a.focalX}% ${a.focalY}%` }} /></div>
-            <div className="bd">
-              <span className="tag">{d.fleet.kicker}</span><h3>{a.name}</h3>
-              <dl className="specs">
-                {a.seats && <div><dt>{d.fleet.seats}</dt><dd>{a.seats}</dd></div>}
-                {a.rangeKm && <div><dt>{d.fleet.range}</dt><dd>{a.rangeKm} km</dd></div>}
-                {a.cruiseKmh && <div><dt>{d.fleet.speed}</dt><dd>{a.cruiseKmh} km/h</dd></div>}
-              </dl>
-              {a.placeholder && <p className="sample">{d.sample}</p>}
-              {!a.placeholder && !a.specificationsVerified && <p className="sample">{d.fleet.specificationsPending}</p>}
+          {d.stats.map(([value, label]) => (
+            <div className="stat" key={label}>
+              <b><Value>{value}</Value></b>
+              <span>{label}</span>
             </div>
-          </article>))}</div>
-      </div></section>
-
-      <section className="sec" id="membership"><div className="wrap split">
-        <Reveal direction="image"><div className="visual"><img src={mediaUrl(slot("membership").imageKey)} alt={slot("membership").alt[locale]} loading="lazy" style={{ objectPosition: `${slot("membership").focalX}% ${slot("membership").focalY}%` }} /></div></Reveal>
-        <Reveal direction="right"><div>
-          <p className="eyebrow">{d.member.kicker}</p><h2>{d.member.title}</h2>
-          <p className="lead">{d.member.intro}</p>
-          <ul className="feat">{d.member.feats.map((f) => <li key={f}>{f}</li>)}</ul>
-          <Link href={`/${locale}/quote`} className="btn">{d.member.cta}</Link>
-        </div></Reveal>
-      </div></section>
-
-      <section className="sec band" id="corporate"><div className="wrap split">
-        <Reveal direction="left"><div>
-          <p className="eyebrow">{d.corporate.kicker}</p><h2>{d.corporate.title}</h2>
-          <p className="lead">{d.corporate.intro}</p>
-          <Link href={`/${locale}/quote`} className="btn ghost">{d.corporate.cta}</Link>
-        </div></Reveal>
-        <Reveal direction="image"><div className="visual"><img src={mediaUrl(slot("corporate").imageKey)} alt={slot("corporate").alt[locale]} loading="lazy" style={{ objectPosition: `${slot("corporate").focalX}% ${slot("corporate").focalY}%` }} /></div></Reveal>
-      </div></section>
-
-      <section className="sec"><div className="wrap">
-        <div className="sec head">
-          <Reveal direction="left"><p className="eyebrow">{d.dest.kicker}</p><h2>{d.dest.title}</h2></Reveal>
-          <Reveal direction="right"><Link href={`/${locale}/destinations`} className="textlink">{d.more}</Link></Reveal>
+          ))}
         </div>
-        <div className="dest-grid">{dest.slice(0, 4).map((p, i) => (
-          <Link href={`/${locale}/destinations`} className="dest rv" key={p.id}>
-            <img src={p.imageKey ? mediaUrl(p.imageKey) : mediaUrl(slot(["hero", "membership", "corporate"][i % 3]).imageKey)} alt={p.alt[locale]} loading="lazy" style={{ objectPosition: `${p.focalX}% ${p.focalY}%` }} />
-            <div className="ov"><h3>{p.name[locale]}</h3></div>
-          </Link>))}</div>
-      </div></section>
+      </section>
 
-      <section className="sec band"><div className="wrap">
-        <Reveal><div className="quoteblock">
-          <p className="eyebrow" style={{ justifyContent: "center" }}>{d.testi.kicker}</p>
-          <blockquote>{d.testi.text}”</blockquote><cite>{d.testi.cite}</cite>
-        </div></Reveal>
-      </div></section>
+      <section className="section section--fleet" id="fleet">
+        <div className="wrap">
+          <div className="section__head">
+            <Reveal direction="left">
+              <p className="eyebrow">{d.fleet.kicker}</p>
+              <h2>{d.fleet.title}</h2>
+            </Reveal>
+            <Reveal direction="right">
+              <p className="lede">{d.fleet.intro}</p>
+              <Link href={`/${locale}/fleet`} className="link-arrow">{d.more}</Link>
+            </Reveal>
+          </div>
 
-      <section className="sec" id="faq"><div className="wrap">
-        <Reveal><p className="eyebrow">{d.faq.kicker}</p><h2>{d.faq.title}</h2></Reveal>
-        <div className="faq">{d.faq.items.map(([q, a]) => (
-          <details className="rv" key={q}><summary>{q}</summary><p>{a}</p></details>))}</div>
-      </div></section>
+          <Reveal direction="image"><AircraftPortrait locale={locale} /></Reveal>
 
-      <section className="sec" style={{ textAlign: "center" }}><div className="wrap narrow">
-        <Reveal><div>
-          <p className="eyebrow" style={{ justifyContent: "center" }}>{d.cta.kicker}</p>
-          <h2>{d.cta.title}</h2>
-          <p className="lead" style={{ margin: "0 auto 2rem" }}>{d.cta.sub}</p>
-          <Link href={`/${locale}/quote`} className="btn">{d.cta.btn}</Link>
-        </div></Reveal>
-      </div></section>
+          {published.length > 0 ? (
+            <div className="fleetlist">              {published.map((aircraft, index) => {
+                const specs: [string, string][] = [];
+                if (aircraft.seats) specs.push([d.fleet.seats, String(aircraft.seats)]);
+                if (aircraft.rangeKm) specs.push([d.fleet.range, `${aircraft.rangeKm} km`]);
+                if (aircraft.cruiseKmh) specs.push([d.fleet.speed, `${aircraft.cruiseKmh} km/h`]);
+                if (aircraft.payloadKg) specs.push([d.fleet.payload, `${aircraft.payloadKg} kg`]);
+                return (
+                  <article className="acft" key={aircraft.id}>
+                    <div className="acft__media">
+                      <img
+                        src={aircraft.imageKey ? mediaUrl(aircraft.imageKey) : mediaUrl(fleetFallback[index % fleetFallback.length].imageKey)}
+                        alt={aircraft.alt[locale]}
+                        loading="lazy"
+                        style={{ objectPosition: `${aircraft.focalX}% ${aircraft.focalY}%` }}
+                      />
+                    </div>
+                    <div className="acft__body">
+                      <span className="acft__index">{String(index + 1).padStart(2, "0")}</span>
+                      <h3>{aircraft.name}</h3>
+                      {aircraft.desc?.[locale] && <p>{aircraft.desc[locale]}</p>}
+                      {specs.length > 0 && (
+                        <dl className="spec">
+                          {specs.map(([key, value]) => (
+                            <div className="spec__row" key={key}><dt>{key}</dt><dd>{value}</dd></div>
+                          ))}
+                        </dl>
+                      )}
+                      {!aircraft.specificationsVerified && <p className="note">{d.fleet.specificationsPending}</p>}
+                      <Link href={`/${locale}/quote`} className="link-arrow">{d.fleet.book}</Link>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="section section--alt" id="services">
+        <div className="wrap">
+          <div className="section__head">
+            <Reveal direction="left">
+              <p className="eyebrow">{d.services.kicker}</p>
+              <h2>{d.services.title}</h2>
+            </Reveal>
+            <Reveal direction="right"><p className="lede">{d.services.intro}</p></Reveal>
+          </div>
+          <div className="svc">
+            {d.services.items.map((item) => (
+              <article className="svc__item rv" key={item.name}>
+                <span className="svc__index">{item.index}</span>
+                <h3>{item.name}</h3>
+                <p>{item.body}</p>
+              </article>
+            ))}
+          </div>
+          <Link href={`/${locale}/services`} className="link-arrow svc__more">{d.services.more}</Link>
+        </div>
+      </section>
+
+      <section className="section section--gallery" id="gallery">
+        <div className="wrap">
+          <div className="section__head">
+            <Reveal direction="left">
+              <p className="eyebrow">{d.gallery.kicker}</p>
+              <h2>{d.gallery.title}</h2>
+            </Reveal>
+            <Reveal direction="right"><p className="lede">{d.gallery.handle}</p></Reveal>
+          </div>
+        </div>
+        <div className="rail" role="list">
+          {gallery.map((item, index) => (
+            <figure className="rail__item" role="listitem" key={`${item.key}-${index}`}>
+              <img src={mediaUrl(item.imageKey)} alt={item.alt[locale]} loading="lazy" style={{ objectPosition: `${item.focalX}% ${item.focalY}%` }} />
+              <figcaption>{String(index + 1).padStart(2, "0")} / {d.gallery.handle}</figcaption>
+            </figure>
+          ))}
+        </div>
+        <div className="wrap"><p className="note rail__note">{d.gallery.note}</p></div>
+      </section>
+
+      <section className="section safety" id="safety">
+        <div className="wrap">
+          <div className="safety__head">
+            <Reveal direction="left">
+              <p className="eyebrow">{d.safety.kicker}</p>
+              <h2>{d.safety.title}</h2>
+            </Reveal>
+            <Reveal direction="right"><p className="lede">{d.safety.intro}</p></Reveal>
+          </div>
+
+          <div className="safety__body">
+            <ul className="checks">
+              {d.safety.points.map((point) => <li key={point}><span aria-hidden="true">✓</span>{point}</li>)}
+            </ul>
+            <div className="certs">
+              {d.safety.certs.map((cert) => (
+                <article className="cert" key={cert.label}>
+                  <span className="cert__label">{cert.label}</span>
+                  <h3><Value>{cert.title}</Value></h3>
+                  <p>{cert.body}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+          <Link href={`/${locale}/safety`} className="link-arrow">{d.more}</Link>
+        </div>
+      </section>
+
+      <section className="section section--alt about" id="about">
+        <div className="wrap about__grid">
+          <Reveal direction="image">
+            <div className="about__media">
+              <img
+                src={mediaUrl(slot("corporate").imageKey)}
+                alt={slot("corporate").alt[locale]}
+                loading="lazy"
+                style={{ objectPosition: `${slot("corporate").focalX}% ${slot("corporate").focalY}%` }}
+              />
+            </div>
+          </Reveal>
+          <Reveal direction="right">
+            <div className="about__copy">
+              <p className="eyebrow">{d.about.kicker}</p>
+              <h2>{d.about.title}</h2>
+              <p className="lede">{d.about.intro}</p>
+              <p>{d.about.body}</p>
+              <dl className="about__facts">
+                {d.about.facts.map(([value, label]) => (
+                  <div key={label}><dt><Value>{value}</Value></dt><dd>{label}</dd></div>
+                ))}
+              </dl>
+              <Link href={`/${locale}/about`} className="btn btn--ghost">{d.about.cta}</Link>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="section pads" id="helipads">
+        <div className="wrap">
+          <div className="section__head">
+            <Reveal direction="left">
+              <p className="eyebrow">{d.pads.kicker}</p>
+              <h2>{d.pads.title}</h2>
+            </Reveal>
+            <Reveal direction="right"><p className="lede">{d.pads.intro}</p></Reveal>
+          </div>
+          <div className="padlist">
+            {d.pads.items.slice(0, 3).map((pad, index) => (
+              <article className="pad rv" key={pad.name}>
+                <span className="pad__index">{String(index + 1).padStart(2, "0")}</span>
+                <span className="pad__role">{pad.role}</span>
+                <h3>{pad.name}</h3>
+                <p>{pad.body}</p>
+                <span className="pad__coords"><Value>{pad.coords}</Value></span>
+              </article>
+            ))}
+          </div>
+          <Link href={`/${locale}/helipads`} className="link-arrow">{d.more}</Link>
+        </div>
+      </section>
+
+      <section className="section section--alt section--dest" id="destinations">
+        <div className="wrap">
+          <div className="section__head">
+            <Reveal direction="left">
+              <p className="eyebrow">{d.dest.kicker}</p>
+              <h2>{d.dest.title}</h2>
+            </Reveal>
+            <Reveal direction="right">
+              <p className="lede">{d.dest.intro}</p>
+              <Link href={`/${locale}/destinations`} className="link-arrow">{d.more}</Link>
+            </Reveal>
+          </div>
+          <div className="destgrid">
+            {dest.slice(0, 4).map((place, index) => (
+              <Link href={`/${locale}/destinations`} className="destcard rv" key={place.id}>
+                <img
+                  src={place.imageKey ? mediaUrl(place.imageKey) : mediaUrl(destinationFallback[index % destinationFallback.length].imageKey)}
+                  alt={place.alt[locale]}
+                  loading="lazy"
+                  style={{ objectPosition: `${place.focalX}% ${place.focalY}%` }}
+                />
+                <span className="destcard__name">{place.name[locale]}</span>
+                <span className="destcard__time">{d.dest.pending}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {prices.length > 0 && (
+        <section className="section section--prices" aria-labelledby="public-prices">
+          <div className="wrap">
+            <Reveal direction="left">
+              <p className="eyebrow">{locale === "mn" ? "Үнийн мэдээлэл" : "Indicative pricing"}</p>
+              <h2 id="public-prices">{locale === "mn" ? "Эхлэх үнэ" : "Starting prices"}</h2>
+            </Reveal>
+            <div className="pricelist">
+              {prices.map((price) => (
+                <article className="priceitem" key={price.id}>
+                  <div>
+                    <h3>{price.label[locale]}</h3>
+                    {price.note[locale] && <p>{price.note[locale]}</p>}
+                  </div>
+                  <strong>
+                    {locale === "mn" ? "Үүнээс эхэлнэ" : "From"}{" "}
+                    {formatMinorAmount(price.amountMinor, price.currency, locale)}
+                  </strong>
+                </article>
+              ))}
+            </div>
+            <p className="note">{d.priceDisclaimer}</p>
+          </div>
+        </section>
+      )}
+
+      <section className="section section--faq" id="faq">
+        <div className="wrap faq__grid">
+          <Reveal direction="left">
+            <p className="eyebrow">{d.faq.kicker}</p>
+            <h2>{d.faq.title}</h2>
+          </Reveal>
+          <div className="faq__list">
+            {d.faq.items.map(([question, answer]) => (
+              <details className="rv" key={question}>
+                <summary>{question}<span aria-hidden="true">+</span></summary>
+                <p>{answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="cta">
+        <div className="wrap">
+          <Reveal>
+            <p className="eyebrow">{d.cta.kicker}</p>
+            <h2>{d.cta.title}</h2>
+            <p className="lede">{d.cta.sub}</p>
+            <div className="cta__actions">
+              <Link href={`/${locale}/quote`} className="btn">{d.cta.btn}<span aria-hidden="true">↗</span></Link>
+            </div>
+            <p className="note cta__note">{d.placeholderNote}</p>
+          </Reveal>
+        </div>
+      </section>
     </>
   );
 }

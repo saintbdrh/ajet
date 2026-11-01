@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
-import MongoliaMap from "@/components/MongoliaMap";
-import { getDestinations, getMediaSlots, getPricing, getSiteCopy, mediaUrl } from "@/lib/content";
+import RouteMap from "@/components/RouteMap";
+import Value from "@/components/Value";
+import { getDestinations, getMediaSlots, getPricing, getSiteCopy, mediaUrl, variedSlots } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
 import { getWeather } from "@/lib/weather";
 import { formatMinorAmount } from "@/lib/money";
@@ -16,45 +18,102 @@ export default async function Destinations({ params }: { params: Promise<{ local
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const [copy, dest, prices, slots] = await Promise.all([getSiteCopy(locale), getDestinations(), getPricing(), getMediaSlots()]);
-  const fallbackPhotos = ["corporate", "membership"].map((key) => slots.find((slot) => slot.key === key)!);
   const d = t(locale, copy);
+  const fallbackPhotos = variedSlots(slots, Math.max(dest.length, 1));
   const wx = await Promise.all(dest.map((p) => getWeather(p.lat, p.lng)));
   const points = dest
     .filter((point) => point.placeholder || point.coordinatesVerified)
     .map((p) => ({ id: p.id, name: p.name[locale], lat: p.lat, lng: p.lng }));
+
   return (
-    <section className="wrap sec destinations-page">
-      <Reveal direction="left"><p className="eyebrow">{d.dest.kicker}</p><h1>{d.dest.title}</h1></Reveal>
-      <Reveal direction="image"><MongoliaMap locale={locale} points={points} variant="page" /></Reveal>
-      {points.length === 0 && <p className="sample">{d.dest.coordinatesUnavailable}</p>}
-      {dest.some((point) => point.placeholder) && <p className="sample">{d.dest.locationDisclaimer}</p>}
-      {wx.some((weather) => weather?.status === "available") && <p className="sample">{d.dest.disclaimer}</p>}
-      <div className="grid destination-showcase">
-        {dest.map((p, i) => (
-          <article key={p.id} className="place-card rv">
-            <div className="place-image"><img src={p.imageKey ? mediaUrl(p.imageKey) : mediaUrl(fallbackPhotos[i % 2].imageKey)} alt={p.alt[locale]} loading="lazy" style={{ objectPosition: `${p.focalX}% ${p.focalY}%` }} /></div>
-            <div className="place-body"><h2>{p.name[locale]}</h2>
-              {p.desc?.[locale] && <p>{p.desc[locale]}</p>}
-              {prices.filter((price) => price.destinationId === p.id).map((price) => (
-                <p className="destination-price" key={price.id}>
-                  <strong>{locale === "mn" ? "Үүнээс эхэлнэ" : "From"} {formatMinorAmount(price.amountMinor, price.currency, locale)}</strong>
-                  <span>{price.label[locale]}{price.note[locale] ? ` · ${price.note[locale]}` : ""}</span>
-                </p>
-              ))}
-              {prices.some((price) => price.destinationId === p.id) && <p className="sample">{d.priceDisclaimer}</p>}
-              {wx[i]?.status === "available" && <>
-                <p className="wx">{d.dest.wx}: {wx[i].tempC} °C, {wx[i].windMs} {d.dest.ms}</p>
-                <p className="sample">{d.dest.wxObserved}: <time dateTime={wx[i].observedAt}>{new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Ulaanbaatar" }).format(new Date(wx[i].observedAt))}</time></p>
-                {Date.now() - Date.parse(wx[i].observedAt) > 2 * 60 * 60 * 1000 && <p className="sample">{d.dest.wxStale}</p>}
-              </>}
-              {wx[i]?.status === "unavailable" && <p className="sample">{d.dest.wxUnavailable}</p>}
-              {p.placeholder && <p className="sample">{d.sample}</p>}
-              {!p.placeholder && !p.coordinatesVerified && <p className="sample">{d.dest.coordinatesPending}</p>}
-              {p.coordinatesVerified && p.coordinateSource && <p className="sample"><a href={p.coordinateSource} target="_blank" rel="noreferrer">Coordinate source ↗</a></p>}
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
+    <>
+      <header className="pagehead">
+        <div className="wrap">
+          <p className="eyebrow">{d.dest.kicker}</p>
+          <h1>{d.dest.title}</h1>
+          <p className="lede">{d.dest.intro}</p>
+        </div>
+      </header>
+
+      <section className="section section--tight">
+        <div className="wrap">
+          <Reveal direction="image"><RouteMap points={points} label={d.dest.map} /></Reveal>
+          <div className="notes">
+            {points.length === 0 && <p className="note">{d.dest.coordinatesUnavailable}</p>}
+            {dest.some((point) => point.placeholder) && <p className="note">{d.dest.locationDisclaimer}</p>}
+            {wx.some((weather) => weather?.status === "available") && <p className="note">{d.dest.disclaimer}</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="section section--alt">
+        <div className="wrap">
+          <div className="destgrid destgrid--page">
+            {dest.map((place, index) => (
+              <article key={place.id} className="place rv">
+                <div className="place__media">
+                  <img
+                    src={place.imageKey ? mediaUrl(place.imageKey) : mediaUrl(fallbackPhotos[index % fallbackPhotos.length].imageKey)}
+                    alt={place.alt[locale]}
+                    loading="lazy"
+                    style={{ objectPosition: `${place.focalX}% ${place.focalY}%` }}
+                  />
+                </div>
+                <div className="place__body">
+                  <h2>{place.name[locale]}</h2>
+                  {place.desc?.[locale] && <p>{place.desc[locale]}</p>}
+
+                  <dl className="place__meta">
+                    <div><dt>{d.dest.time}</dt><dd><Value>{d.dest.pending}</Value></dd></div>
+                    {wx[index]?.status === "available" && (
+                      <div>
+                        <dt>{d.dest.wx}</dt>
+                        <dd>{wx[index].tempC} °C · {wx[index].windMs} {d.dest.ms}</dd>
+                      </div>
+                    )}
+                  </dl>
+
+                  {prices.filter((price) => price.destinationId === place.id).map((price) => (
+                    <p className="place__price" key={price.id}>
+                      <strong>{locale === "mn" ? "Үүнээс эхэлнэ" : "From"} {formatMinorAmount(price.amountMinor, price.currency, locale)}</strong>
+                      <span>{price.label[locale]}{price.note[locale] ? ` · ${price.note[locale]}` : ""}</span>
+                    </p>
+                  ))}
+                  {prices.some((price) => price.destinationId === place.id) && <p className="note">{d.priceDisclaimer}</p>}
+
+                  {wx[index]?.status === "available" && (
+                    <p className="note">
+                      {d.dest.wxObserved}:{" "}
+                      <time dateTime={wx[index].observedAt}>
+                        {new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-US", {
+                          dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Ulaanbaatar",
+                        }).format(new Date(wx[index].observedAt))}
+                      </time>
+                      {Date.now() - Date.parse(wx[index].observedAt) > 2 * 60 * 60 * 1000 && ` · ${d.dest.wxStale}`}
+                    </p>
+                  )}
+                  {wx[index]?.status === "unavailable" && <p className="note">{d.dest.wxUnavailable}</p>}
+                  {place.placeholder && <p className="note">{d.sample}</p>}
+                  {!place.placeholder && !place.coordinatesVerified && <p className="note">{d.dest.coordinatesPending}</p>}
+                  {place.coordinatesVerified && place.coordinateSource && (
+                    <p className="note"><a href={place.coordinateSource} target="_blank" rel="noreferrer">Coordinate source ↗</a></p>
+                  )}
+
+                  <Link href={`/${locale}/quote`} className="link-arrow">{d.cta.btn}</Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="cta cta--compact">
+        <div className="wrap">
+          <h2>{d.cta.title}</h2>
+          <p className="lede">{d.cta.sub}</p>
+          <Link href={`/${locale}/quote`} className="btn">{d.cta.btn}<span aria-hidden="true">↗</span></Link>
+        </div>
+      </section>
+    </>
   );
 }
