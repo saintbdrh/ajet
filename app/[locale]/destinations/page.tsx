@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
+import MongoliaMap from "@/components/MongoliaMap";
 import RouteMap from "@/components/RouteMap";
 import { getDestinations, getMediaSlots, getPricing, getSiteCopy, mediaUrl, slotStill } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
@@ -25,7 +26,7 @@ export default async function Destinations({ params }: { params: Promise<{ local
   return (
     <section className="wrap sec destinations-page">
       <Reveal direction="left"><p className="eyebrow">{d.dest.kicker}</p><h1>{d.dest.title}</h1></Reveal>
-      <Reveal direction="image"><RouteMap points={points} label={d.dest.map} /></Reveal>
+      <Reveal direction="image"><MongoliaMap locale={locale} points={points} variant="page" /></Reveal>
       {points.length === 0 && <p className="sample">{d.dest.coordinatesUnavailable}</p>}
       {dest.some((point) => point.placeholder) && <p className="sample">{d.dest.locationDisclaimer}</p>}
       {wx.some((weather) => weather?.status === "available") && <p className="sample">{d.dest.disclaimer}</p>}
