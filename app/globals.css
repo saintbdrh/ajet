@@ -573,3 +573,18 @@ p{margin:0 0 1em} a{color:inherit;text-decoration:none} img{max-width:100%;displ
   .pricing-item{align-items:flex-start;flex-direction:column;gap:.4rem}
   .pricing-item strong{white-space:normal}
 }
+/* Destination particle map (components/MongoliaMap.tsx) */
+.hero-map{--map-dot:var(--ivory);--map-line:rgba(241,238,231,.7);--map-accent:var(--gold2);position:relative;width:100%;height:min(68vh,600px);min-height:340px;margin:3rem 0;border:1px solid var(--line2);background:radial-gradient(120% 100% at 50% 0%,#15171a,#0d0f10 55%,#090a0b);overflow:hidden;isolation:isolate}
+.hero-map canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero-map-scrim{position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 70% at 50% 45%,transparent 45%,rgba(9,10,11,.55))}
+.hero-map-ui{position:absolute;left:clamp(1rem,3vw,1.6rem);bottom:clamp(1rem,3vw,1.6rem);right:clamp(1rem,3vw,1.6rem);z-index:1;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+.hero-map-tag{font:400 .58rem/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-right:.3rem}
+.hero-map-ui button{appearance:none;background:rgba(9,10,11,.5);border:1px solid var(--line);color:var(--ivory);padding:.6rem .95rem;font:500 .6rem/1 var(--sans);letter-spacing:.17em;text-transform:uppercase;cursor:pointer;transition:color .35s var(--ease-lux),border-color .35s var(--ease-lux),background .35s var(--ease-lux)}
+.hero-map-ui button:hover{border-color:var(--gold);color:var(--gold2)}
+.hero-map-ui button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold2);background:rgba(185,161,122,.14)}
+.hero-map-ui .reset{color:var(--muted)}
+.hero-map--page{height:min(70svh,640px);margin:2rem 0}
+.hero-map--page .hero-map-scrim{display:none}
+.hero-map--page .hero-map-ui{left:0;right:auto;justify-content:flex-start}
+@media(max-width:700px){.hero-map{height:min(62vh,460px)}.hero-map-ui button{padding:.5rem .7rem;font-size:.55rem;letter-spacing:.12em}.hero-map-tag{display:none}}
+@media(prefers-reduced-motion:reduce){.hero-map-ui button{transition:none}}
