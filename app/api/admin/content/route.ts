@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isCmsCopyKey, isLocale } from "@/lib/i18n";
-import { getDatabase } from "@/lib/cloudflare";
+import { getDatabase } from "@/lib/db";
 import { isAdminResponse, requireAdmin } from "@/lib/admin-api";
 import { revalidatePath } from "next/cache";
 
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const authorization = await requireAdmin(request, ["content_editor"]);
   if (isAdminResponse(authorization)) return authorization;
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
 
   const result = await db.prepare(
     "SELECT locale, key, value FROM site_copy ORDER BY locale, key",
@@ -53,7 +53,7 @@ export async function PUT(request: Request) {
   }
 
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const existing = await db.prepare("SELECT key, value FROM site_copy WHERE locale = ?").bind(locale)
     .all<{ key: string; value: string }>();
   if (!existing.success) return NextResponse.json({ ok: false, error: "Could not read current website copy." }, { status: 500 });

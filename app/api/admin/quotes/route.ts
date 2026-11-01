@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCloudflareEnv, getDatabase } from "@/lib/cloudflare";
+import { getCloudflareEnv } from "@/lib/cloudflare";
+import { getDatabase, type Database } from "@/lib/db";
 import { isAdminResponse, requireAdmin } from "@/lib/admin-api";
 import { currencyFractionDigits, majorToMinor } from "@/lib/money";
 import { notifyClient, notifyOperations, recordNotificationOutcomes } from "@/lib/notifications";
@@ -42,7 +43,7 @@ type PublishedPriceRow = {
   destination_id: string | null; destination_mn: string | null; destination_en: string | null;
 };
 
-async function writeAudit(db: D1Database, actor: string, action: string, entityId: string, detail: string) {
+async function writeAudit(db: Database, actor: string, action: string, entityId: string, detail: string) {
   const result = await db.prepare(
     "INSERT INTO admin_audit_log (actor, action, entity, entity_id, detail) VALUES (?, ?, 'quote', ?, ?)",
   ).bind(actor, action, entityId, detail).run();
@@ -53,35 +54,34 @@ export async function GET(request: Request) {
   const authorization = await requireAdmin(request, ["dispatcher"]);
   if (isAdminResponse(authorization)) return authorization;
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503, headers: privateHeaders });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503, headers: privateHeaders });
   const expiring = await db.prepare(
     `SELECT q.id FROM quotes q
      JOIN quote_revisions r ON r.quote_id = q.id
      WHERE q.status = 'quoted' AND r.status = 'sent'
        AND r.revision = (SELECT MAX(latest.revision) FROM quote_revisions latest WHERE latest.quote_id = q.id)
-       AND datetime(r.expires_at) <= CURRENT_TIMESTAMP`,
+       AND r.expires_at <= CURRENT_TIMESTAMP`,
   ).all<{ id: string }>();
-  if (!expiring.success) {
-    console.error("[admin] Could not check quote expiry.", expiring.error);
-    return NextResponse.json({ ok: false, error: "Could not check quote expiry." }, { status: 500, headers: privateHeaders });
-  }
   for (const expired of expiring.results) {
-    const results = await db.batch([
-      db.prepare(
-        `UPDATE quotes SET status = 'expired', updated_at = CURRENT_TIMESTAMP
-         WHERE id = ? AND status = 'quoted'`,
-      ).bind(expired.id),
-      db.prepare(
-        `UPDATE quote_revisions SET status = 'expired'
-         WHERE quote_id = ? AND status = 'sent' AND datetime(expires_at) <= CURRENT_TIMESTAMP AND changes() = 1`,
-      ).bind(expired.id),
-      db.prepare(
-        `INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note)
-         SELECT ?, 'quoted', 'expired', 'system', 'Quote expired.' WHERE changes() = 1`,
-      ).bind(expired.id),
-    ]);
-    if (results.some((result) => !result.success)) {
-      console.error(`[admin] Could not record expiry for quote ${expired.id}.`);
+    try {
+      await db.transaction(async (tx) => {
+        const quote = await tx.prepare(
+          `UPDATE quotes SET status = 'expired', updated_at = CURRENT_TIMESTAMP
+           WHERE id = ? AND status = 'quoted'`,
+        ).bind(expired.id).run();
+        if (quote.meta.changes !== 1) return;
+        const revision = await tx.prepare(
+          `UPDATE quote_revisions SET status = 'expired'
+           WHERE quote_id = ? AND status = 'sent' AND expires_at <= CURRENT_TIMESTAMP`,
+        ).bind(expired.id).run();
+        if (revision.meta.changes !== 1) return;
+        await tx.prepare(
+          `INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note)
+           VALUES (?, 'quoted', 'expired', 'system', 'Quote expired.')`,
+        ).bind(expired.id).run();
+      });
+    } catch (error) {
+      console.error(`[admin] Could not record expiry for quote ${expired.id}.`, error);
       return NextResponse.json({ ok: false, error: "Could not update expired quotes." }, { status: 500, headers: privateHeaders });
     }
   }
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
   const from = env?.QUOTE_FROM_EMAIL ?? process.env.QUOTE_FROM_EMAIL;
   const publicSiteUrl = env?.PUBLIC_SITE_URL ?? process.env.PUBLIC_SITE_URL;
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   if (!key || !from || !publicSiteUrl) {
     return NextResponse.json({ ok: false, error: "Quote email and PUBLIC_SITE_URL must be configured." }, { status: 503 });
   }
@@ -242,18 +242,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Quote was saved as a draft, but email delivery failed." }, { status: 502 });
   }
 
-  const saved = await db.batch([
-    db.prepare("UPDATE quote_revisions SET status = 'superseded' WHERE quote_id = ? AND status = 'sent'").bind(data.id),
-    db.prepare("UPDATE quote_revisions SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'draft'").bind(revisionId),
-    db.prepare("UPDATE quotes SET status = 'quoted', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status IN ('requested', 'in_review', 'quoted')").bind(data.id),
-    db.prepare(
-      "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) SELECT ?, ?, 'quoted', ?, ? WHERE changes() = 1",
-    ).bind(data.id, quote.status, authorization.email, `Quote revision ${revision} delivered by email.`),
-    db.prepare(
-      "INSERT INTO admin_audit_log (actor, action, entity, entity_id, detail) SELECT ?, 'quote_sent', 'quote', ?, ? WHERE changes() = 1",
-    ).bind(authorization.email, data.id, `revision=${revision}`),
-  ]);
-  if (saved.some((result) => !result.success) || saved[2].meta.changes === 0) {
+  let finalized = false;
+  try {
+    finalized = await db.transaction(async (tx) => {
+      await tx.prepare("UPDATE quote_revisions SET status = 'superseded' WHERE quote_id = ? AND status = 'sent'").bind(data.id).run();
+      await tx.prepare("UPDATE quote_revisions SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'draft'").bind(revisionId).run();
+      const updated = await tx.prepare("UPDATE quotes SET status = 'quoted', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status IN ('requested', 'in_review', 'quoted')").bind(data.id).run();
+      if (updated.meta.changes === 0) return false;
+      await tx.prepare(
+        "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) VALUES (?, ?, 'quoted', ?, ?)",
+      ).bind(data.id, quote.status, authorization.email, `Quote revision ${revision} delivered by email.`).run();
+      await tx.prepare(
+        "INSERT INTO admin_audit_log (actor, action, entity, entity_id, detail) VALUES (?, 'quote_sent', 'quote', ?, ?)",
+      ).bind(authorization.email, data.id, `revision=${revision}`).run();
+      return true;
+    });
+  } catch (error) {
+    console.error(`[admin] Could not finalize quote revision ${revisionId}.`, error);
+  }
+  if (!finalized) {
     console.error(`[admin] Email was sent but quote revision ${revisionId} could not be finalized.`);
     return NextResponse.json({ ok: false, error: "Email was sent, but the request changed before it could be finalized. Contact operations before retrying." }, { status: 503 });
   }
@@ -272,7 +279,7 @@ export async function PATCH(request: Request) {
   const parsed = actionSchema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid quote workflow action." }, { status: 400 });
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const action = parsed.data;
   const quote = await db.prepare(
     "SELECT id, status, passengers, locale, name, email, origin, destination, round_trip, flight_date, flight_time FROM quotes WHERE id = ?",
@@ -302,28 +309,33 @@ export async function PATCH(request: Request) {
     nextStatus = "closed";
   }
   const note = action.note || (action.action === "review" ? "Dispatcher started review." : "");
-  const update = action.action === "confirm"
-    ? db.prepare(
+  const update = (conn: Database) => action.action === "confirm"
+    ? conn.prepare(
       `UPDATE quotes SET status = ?, assigned_aircraft_id = ?, operational_approved_by = ?,
         operational_approved_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND status = ?`,
     ).bind(nextStatus, assignedAircraftId, authorization.email, action.id, quote.status)
-    : db.prepare("UPDATE quotes SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ?")
+    : conn.prepare("UPDATE quotes SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = ?")
       .bind(nextStatus, action.id, quote.status);
-  const results = await db.batch([
-    update,
-    db.prepare(
-      "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) SELECT ?, ?, ?, ?, ? WHERE changes() = 1",
-    ).bind(action.id, quote.status, nextStatus, authorization.email, note),
-    db.prepare(
-      "INSERT INTO admin_audit_log (actor, action, entity, entity_id, detail) VALUES (?, ?, 'quote', ?, ?)",
-    ).bind(authorization.email, action.action === "confirm" ? "operational_confirmation" : `quote_${action.action}`, action.id, action.action === "confirm" ? `aircraft=${assignedAircraftId}; ${note}` : note),
-  ]);
-  if (results.some((result) => !result.success)) {
-    console.error(`[admin] Could not apply ${action.action} workflow action to ${action.id}.`);
+  let applied: boolean;
+  try {
+    applied = await db.transaction(async (tx) => {
+      const updated = await update(tx).run();
+      if (updated.meta.changes === 1) {
+        await tx.prepare(
+          "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) VALUES (?, ?, ?, ?, ?)",
+        ).bind(action.id, quote.status, nextStatus, authorization.email, note).run();
+      }
+      await tx.prepare(
+        "INSERT INTO admin_audit_log (actor, action, entity, entity_id, detail) VALUES (?, ?, 'quote', ?, ?)",
+      ).bind(authorization.email, action.action === "confirm" ? "operational_confirmation" : `quote_${action.action}`, action.id, action.action === "confirm" ? `aircraft=${assignedAircraftId}; ${note}` : note).run();
+      return updated.meta.changes > 0;
+    });
+  } catch (error) {
+    console.error(`[admin] Could not apply ${action.action} workflow action to ${action.id}.`, error);
     return NextResponse.json({ ok: false, error: "Could not update quote workflow." }, { status: 500 });
   }
-  if (results[0].meta.changes === 0) {
+  if (!applied) {
     return NextResponse.json({ ok: false, error: "The request changed while you were updating it. Refresh and try again." }, { status: 409 });
   }
   let notificationPending = false;
@@ -355,7 +367,7 @@ export async function PATCH(request: Request) {
   return NextResponse.json({ ok: true, status: nextStatus, notificationPending });
 }
 
-async function dispatchAircraftName(id: string | null, db: D1Database) {
+async function dispatchAircraftName(id: string | null, db: Database) {
   if (!id) return "not recorded";
   const result = await db.prepare("SELECT name FROM aircraft WHERE id = ?").bind(id).first<{ name: string }>();
   return result?.name ?? id;

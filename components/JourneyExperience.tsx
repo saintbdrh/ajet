@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import MediaView from "@/components/MediaView";
 import type { Locale } from "@/lib/i18n";
 
-type JourneyScene = { label: string; title: string; body: string; image: string; position: string };
+type JourneyScene = { label: string; title: string; body: string; image: string; video: boolean; poster?: string; position: string };
 
 export default function JourneyExperience({ locale, scenes, kicker, intro }: {
   locale: Locale;
@@ -13,7 +14,7 @@ export default function JourneyExperience({ locale, scenes, kicker, intro }: {
   intro: string;
 }) {
   const content = scenes;
-  const stageImages = Array.from(new Set(content.map((scene) => scene.image)));
+  const stageImages = Array.from(new Map(content.map((scene) => [scene.image, scene])).values());
   const [activeScene, setActiveScene] = useState(0);
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function JourneyExperience({ locale, scenes, kicker, intro }: {
             >
               <p className="journey-label"><span>{String(index + 1).padStart(2, "0")}</span> {scene.label}</p>
               <div className="journey-scene-image">
-                <img src={scene.image} alt="" loading={index === 0 ? "eager" : "lazy"} style={{ objectPosition: scene.position }} />
+                <MediaView src={scene.image} video={scene.video} poster={scene.poster} alt="" loading={index === 0 ? "eager" : "lazy"} style={{ objectPosition: scene.position }} />
               </div>
               <h2>{scene.title}</h2>
               <p className="journey-body">{scene.body}</p>
@@ -74,14 +75,16 @@ export default function JourneyExperience({ locale, scenes, kicker, intro }: {
         </div>
         <div className="journey-visual" aria-hidden="true">
           <div className="journey-image-stack">
-            {stageImages.map((image) => (
-              <img
-                className={`journey-image${image === content[activeScene].image ? " is-active" : ""}`}
-                src={image}
+            {stageImages.map((stage) => (
+              <MediaView
+                className={`journey-image${stage.image === content[activeScene].image ? " is-active" : ""}`}
+                src={stage.image}
+                video={stage.video}
+                poster={stage.poster}
                 alt=""
-                loading={image === content[0].image ? "eager" : "lazy"}
+                loading={stage.image === content[0].image ? "eager" : "lazy"}
                 style={{ objectPosition: content[activeScene].position }}
-                key={image}
+                key={stage.image}
               />
             ))}
             <span className="journey-image-shade" />

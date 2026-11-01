@@ -7,7 +7,7 @@ import "../globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import ScrollMotion from "@/components/ScrollMotion";
 import { BRAND, isLocale, locales, t } from "@/lib/i18n";
-import { getSiteCopy } from "@/lib/content";
+import { getMediaSlots, getSiteCopy } from "@/lib/content";
 
 const serif = Cormorant_Garamond({ subsets: ["cyrillic", "cyrillic-ext", "latin"], weight: ["400","500","600"], variable: "--font-serif", display: "swap" });
 const sans = Manrope({ subsets: ["cyrillic", "cyrillic-ext", "latin"], weight: ["400","500","600","700"], variable: "--font-sans", display: "swap" });
@@ -29,8 +29,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function RootLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const copy = await getSiteCopy(locale);
+  const [copy, slots] = await Promise.all([getSiteCopy(locale), getMediaSlots()]);
   const d = t(locale, copy);
+  const credits = Array.from(new Map(
+    slots.filter((slot) => slot.creditText).map((slot) => [slot.creditText, slot.creditUrl]),
+  ));
   const contactPhone = copy.contactPhone?.trim();
   const contactEmail = copy.contactEmail?.trim();
   const isConfiguredPhone = contactPhone && contactPhone !== "+976 7000 0000";
@@ -67,12 +70,15 @@ export default async function RootLayout({ children, params }: { children: React
             </ul></div>
           </div>
           <div className="bar"><span>{d.foot.rights}</span><span>{d.foot.legal}</span></div>
-          <p className="photo-credit">
-            {locale === "mn" ? "Зургийн эх сурвалж:" : "Hero photo:"}{" "}
-            <a href="https://commons.wikimedia.org/wiki/File:Tengboche,_Helicopter_in_flight,_Mountains_of_Nepal.jpg" target="_blank" rel="noreferrer">
-              Vyacheslav Argenberg · CC BY 4.0
-            </a>
-          </p>
+          {credits.length > 0 && <p className="photo-credit">
+            {locale === "mn" ? "Зургийн эх сурвалж:" : "Photo credits:"}{" "}
+            {credits.map(([text, url], index) => (
+              <span key={text}>
+                {index > 0 && " · "}
+                {url ? <a href={url} target="_blank" rel="noreferrer">{text}</a> : text}
+              </span>
+            ))}
+          </p>}
         </div></footer>
       </body>
     </html>

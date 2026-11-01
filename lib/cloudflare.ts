@@ -19,10 +19,3 @@ export async function getCloudflareEnv(): Promise<CloudflareEnv | null> {
     throw error;
   }
 }
-
-export async function getDatabase(): Promise<D1Database | null> {
-  const env = await getCloudflareEnv();
-  if (env?.DB) return env.DB;
-  if (process.env.NODE_ENV !== "production" || isBuild) return null;
-  throw new Error("Cloudflare D1 binding DB is not configured.");
-}

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import JourneyExperience from "@/components/JourneyExperience";
+import MediaView from "@/components/MediaView";
 import Reveal from "@/components/Reveal";
-import { getDestinations, getFleet, getMediaSlots, getPricing, getSiteCopy, mediaUrl } from "@/lib/content";
+import { getDestinations, getFleet, getMediaSlots, getPricing, getSiteCopy, mediaUrl, slotStill, type MediaSlot } from "@/lib/content";
+import { isVideoKey } from "@/lib/media";
 import { isLocale, t } from "@/lib/i18n";
 import { formatMinorAmount } from "@/lib/money";
 
@@ -14,7 +16,19 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const slot = (key: string) => slots.find((item) => item.key === key)!;
   const journeyScenes = d.journey.map((scene, index) => {
     const photo = slot(`journey-${String(index + 1).padStart(2, "0")}`);
-    return { ...scene, image: mediaUrl(photo.imageKey), position: `${photo.focalX}% ${photo.focalY}%` };
+    return {
+      ...scene,
+      image: mediaUrl(photo.imageKey),
+      video: isVideoKey(photo.imageKey),
+      poster: photo.posterKey ? mediaUrl(photo.posterKey) : undefined,
+      position: `${photo.focalX}% ${photo.focalY}%`,
+    };
+  });
+  const slotMedia = (item: MediaSlot) => ({
+    src: mediaUrl(item.imageKey),
+    video: isVideoKey(item.imageKey),
+    poster: item.posterKey ? mediaUrl(item.posterKey) : undefined,
+    style: { objectPosition: `${item.focalX}% ${item.focalY}%` },
   });
   return (
     <>
@@ -27,7 +41,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           </div>
         </div>
         <div className="hero-stage">
-          <div className="bgimg" aria-hidden="true"><img src={mediaUrl(slot("hero").imageKey)} alt="" fetchPriority="high" style={{ objectPosition: `${slot("hero").focalX}% ${slot("hero").focalY}%` }} /></div>
+          <div className="bgimg" aria-hidden="true"><MediaView {...slotMedia(slot("hero"))} alt="" loading="eager" fetchPriority="high" /></div>
           <div className="veil" aria-hidden="true" />
           <div className="hero-stage-content">
             <p className="hero-caption">{locale === "mn" ? "ТУСГАЙ НИСЛЭГ · МОНГОЛ" : "PRIVATE CHARTER · MONGOLIA"}</p>
@@ -72,7 +86,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </div>
         <div className="fleet-grid">{fleet.slice(0, 3).map((a, i) => (
           <article className="ac rv" key={a.id}>
-            <div className="ph"><img src={a.imageKey ? mediaUrl(a.imageKey) : mediaUrl(slot(["hero", "corporate", "membership"][i % 3]).imageKey)} alt={a.alt[locale]} loading="lazy" style={{ objectPosition: `${a.focalX}% ${a.focalY}%` }} /></div>
+            <div className="ph"><img src={a.imageKey ? mediaUrl(a.imageKey) : mediaUrl(slotStill(slot(["hero", "corporate", "membership"][i % 3])))} alt={a.alt[locale]} loading="lazy" style={{ objectPosition: `${a.focalX}% ${a.focalY}%` }} /></div>
             <div className="bd">
               <span className="tag">{d.fleet.kicker}</span><h3>{a.name}</h3>
               <dl className="specs">
@@ -87,7 +101,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       </div></section>
 
       <section className="sec" id="membership"><div className="wrap split">
-        <Reveal direction="image"><div className="visual"><img src={mediaUrl(slot("membership").imageKey)} alt={slot("membership").alt[locale]} loading="lazy" style={{ objectPosition: `${slot("membership").focalX}% ${slot("membership").focalY}%` }} /></div></Reveal>
+        <Reveal direction="image"><div className="visual"><MediaView {...slotMedia(slot("membership"))} alt={slot("membership").alt[locale]} /></div></Reveal>
         <Reveal direction="right"><div>
           <p className="eyebrow">{d.member.kicker}</p><h2>{d.member.title}</h2>
           <p className="lead">{d.member.intro}</p>
@@ -102,7 +116,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <p className="lead">{d.corporate.intro}</p>
           <Link href={`/${locale}/quote`} className="btn ghost">{d.corporate.cta}</Link>
         </div></Reveal>
-        <Reveal direction="image"><div className="visual"><img src={mediaUrl(slot("corporate").imageKey)} alt={slot("corporate").alt[locale]} loading="lazy" style={{ objectPosition: `${slot("corporate").focalX}% ${slot("corporate").focalY}%` }} /></div></Reveal>
+        <Reveal direction="image"><div className="visual"><MediaView {...slotMedia(slot("corporate"))} alt={slot("corporate").alt[locale]} /></div></Reveal>
       </div></section>
 
       <section className="sec"><div className="wrap">
@@ -112,7 +126,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </div>
         <div className="dest-grid">{dest.slice(0, 4).map((p, i) => (
           <Link href={`/${locale}/destinations`} className="dest rv" key={p.id}>
-            <img src={p.imageKey ? mediaUrl(p.imageKey) : mediaUrl(slot(["hero", "membership", "corporate"][i % 3]).imageKey)} alt={p.alt[locale]} loading="lazy" style={{ objectPosition: `${p.focalX}% ${p.focalY}%` }} />
+            <img src={p.imageKey ? mediaUrl(p.imageKey) : mediaUrl(slotStill(slot(["hero", "membership", "corporate"][i % 3])))} alt={p.alt[locale]} loading="lazy" style={{ objectPosition: `${p.focalX}% ${p.focalY}%` }} />
             <div className="ov"><h3>{p.name[locale]}</h3></div>
           </Link>))}</div>
       </div></section>

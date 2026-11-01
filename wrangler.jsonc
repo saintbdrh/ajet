@@ -14,19 +14,7 @@
       "service": "tenger-air"
     }
   ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "tenger-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
-      "migrations_dir": "migrations"
-    }
-  ],
   "r2_buckets": [
-    {
-      "binding": "MEDIA",
-      "bucket_name": "tenger-media"
-    },
     {
       "binding": "NEXT_INC_CACHE_R2_BUCKET",
       "bucket_name": "tenger-opennext-cache"

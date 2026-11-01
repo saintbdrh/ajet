@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCloudflareEnv, getDatabase } from "@/lib/cloudflare";
+import { getCloudflareEnv } from "@/lib/cloudflare";
+import { getDatabase } from "@/lib/db";
 import { notifyOperations, recordNotificationOutcomes } from "@/lib/notifications";
 
 export const runtime = "nodejs";
@@ -19,6 +20,9 @@ type QuoteDecisionRow = {
   passengers: number; quote_status: string;
 };
 
+/** Thrown inside a transaction to roll back when the revision was already answered. */
+class AnsweredError extends Error {}
+
 async function hashToken(token: string) {
   return crypto.subtle.digest("SHA-256", new TextEncoder().encode(token))
     .then((buffer) => Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join(""));
@@ -36,13 +40,15 @@ async function findRevision(token: string) {
   ).bind(await hashToken(token)).first<QuoteDecisionRow>();
   if (!row) return { response: NextResponse.json({ ok: false, code: "invalid" }, { status: 404, headers: privateHeaders }) };
   if (row.revision_status === "sent" && Date.parse(row.expires_at) <= Date.now()) {
-    await db.batch([
-      db.prepare("UPDATE quote_revisions SET status = 'expired' WHERE id = ? AND status = 'sent'").bind(row.revision_id),
-      db.prepare("UPDATE quotes SET status = 'expired', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'quoted'").bind(row.quote_id),
-      db.prepare(
-        "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) SELECT ?, 'quoted', 'expired', 'system', 'Quote expired.' WHERE changes() = 1",
-      ).bind(row.quote_id),
-    ]);
+    await db.transaction(async (tx) => {
+      await tx.prepare("UPDATE quote_revisions SET status = 'expired' WHERE id = ? AND status = 'sent'").bind(row.revision_id).run();
+      const quote = await tx.prepare("UPDATE quotes SET status = 'expired', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'quoted'").bind(row.quote_id).run();
+      if (quote.meta.changes === 1) {
+        await tx.prepare(
+          "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) VALUES (?, 'quoted', 'expired', 'system', 'Quote expired.')",
+        ).bind(row.quote_id).run();
+      }
+    });
     return { response: NextResponse.json({ ok: false, code: "expired" }, { status: 410, headers: privateHeaders }) };
   }
   return { db, row };
@@ -92,20 +98,28 @@ export async function POST(request: Request) {
 
   const nextStatus = parsed.data.action === "approve" ? "approved" : "declined";
   const revisionStatus = parsed.data.action === "approve" ? "approved" : "declined";
-  const updates = await db.batch([
-    db.prepare("UPDATE quotes SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'quoted'")
-      .bind(nextStatus, row.quote_id),
-    db.prepare("UPDATE quote_revisions SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'sent' AND changes() = 1")
-      .bind(revisionStatus, row.revision_id),
-    db.prepare(
-      "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) SELECT ?, 'quoted', ?, 'client', ? WHERE changes() = 1",
-    ).bind(row.quote_id, nextStatus, `Client ${parsed.data.action}d quote revision ${row.revision}.`),
-  ]);
-  if (updates.some((item) => !item.success)) {
-    console.error(`[quote] Could not record client response for ${row.quote_id}.`);
-    return NextResponse.json({ ok: false, code: "unavailable" }, { status: 503, headers: privateHeaders });
+  let recorded: boolean;
+  try {
+    recorded = await db.transaction(async (tx) => {
+      const quote = await tx.prepare("UPDATE quotes SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'quoted'")
+        .bind(nextStatus, row.quote_id).run();
+      if (quote.meta.changes === 0) return false;
+      const revision = await tx.prepare("UPDATE quote_revisions SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'sent'")
+        .bind(revisionStatus, row.revision_id).run();
+      if (revision.meta.changes === 0) throw new AnsweredError();
+      await tx.prepare(
+        "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) VALUES (?, 'quoted', ?, 'client', ?)",
+      ).bind(row.quote_id, nextStatus, `Client ${parsed.data.action}d quote revision ${row.revision}.`).run();
+      return true;
+    });
+  } catch (error) {
+    if (error instanceof AnsweredError) recorded = false;
+    else {
+      console.error(`[quote] Could not record client response for ${row.quote_id}.`, error);
+      return NextResponse.json({ ok: false, code: "unavailable" }, { status: 503, headers: privateHeaders });
+    }
   }
-  if (updates[0].meta.changes === 0 || updates[1].meta.changes === 0) {
+  if (!recorded) {
     return NextResponse.json({ ok: false, code: "answered" }, { status: 409, headers: privateHeaders });
   }
   const env = await getCloudflareEnv();

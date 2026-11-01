@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getDatabase } from "@/lib/cloudflare";
+import { getDatabase } from "@/lib/db";
 import { isAdminResponse, requireAdmin } from "@/lib/admin-api";
 import { contentRevisionStatement } from "@/lib/content-revisions";
+import { usableMediaKind } from "@/lib/media-assets";
 import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
   const authorization = await requireAdmin(request, ["content_editor"]);
   if (isAdminResponse(authorization)) return authorization;
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const result = await db.prepare(
     `SELECT id, name_mn, name_en, description_mn, description_en, latitude,
       longitude, image_key, coordinate_source, coordinates_verified,
@@ -90,8 +91,11 @@ async function saveDestination(request: Request) {
   const parsed = destinationSchema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ ok: false, error: "Invalid destination details." }, { status: 400 });
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const item = parsed.data;
+  if (item.imageKey !== null && await usableMediaKind(db, item.imageKey) !== "image") {
+    return NextResponse.json({ ok: false, error: "Choose a photo that finished uploading." }, { status: 400 });
+  }
   const previous = await db.prepare(
     `SELECT destinations.*, display.focal_x, display.focal_y, display.alt_mn, display.alt_en
      FROM destinations LEFT JOIN destination_display display ON display.destination_id = destinations.id
@@ -164,7 +168,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid destination id." }, { status: 400 });
   }
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const permanent = new URL(request.url).searchParams.get("permanent") === "true";
   if (permanent && authorization.role !== "owner") {
     return NextResponse.json({ ok: false, error: "Only the owner can permanently remove destinations." }, { status: 403 });

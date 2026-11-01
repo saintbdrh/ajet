@@ -1,0 +1,37 @@
+# Local development services. Production uses DATABASE_URL (Neon) and S3_* (Cloudflare R2).
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ajet
+      POSTGRES_PASSWORD: ajet
+      POSTGRES_DB: ajet
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ajet -d ajet"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # S3-compatible storage standing in for Cloudflare R2 (MinIO no longer ships free images).
+  # Console: http://localhost:9001 (ajet / ajet-secret). Bucket setup: npm run storage:setup
+  storage:
+    image: rustfs/rustfs:1.0.3
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ajet
+      RUSTFS_SECRET_KEY: ajet-secret
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - storage-data:/data
+
+volumes:
+  postgres-data:
+  storage-data:

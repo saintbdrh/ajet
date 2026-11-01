@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCloudflareEnv } from "@/lib/cloudflare";
+import { getDatabase, type Database } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -92,7 +93,7 @@ async function sendEmail(subject: string, text: string, to: string[], env: Cloud
 }
 
 async function recordNotification(
-  db: D1Database,
+  db: Database,
   quoteId: string,
   event: "request_received",
   channel: "telegram" | "email",
@@ -138,9 +139,9 @@ export async function POST(request: Request) {
   }
   if (!captcha) return NextResponse.json({ ok: false, error: "captcha" }, { status: 400 });
 
-  const db = env?.DB;
+  const db = await getDatabase();
   if (!db) {
-    console.error("[quote] D1 is unavailable; refusing to accept an unpersisted request.");
+    console.error("[quote] Database is unavailable; refusing to accept an unpersisted request.");
     return NextResponse.json({ ok: false, error: "persistence_unavailable" }, { status: 503 });
   }
 
@@ -166,26 +167,28 @@ export async function POST(request: Request) {
   } else {
     quoteId = `Q-${d.date.replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const note = d.notes ?? "";
-    const saved = await db.batch([
-      db.prepare(
-        `INSERT INTO quotes (
-          id, idempotency_key, request_hash, locale, name, phone, email, organization,
-          origin, destination, round_trip, flight_date, flight_time, passengers, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).bind(
-        quoteId, d.idempotencyKey, requestHash, d.locale, d.name, d.phone, d.email ?? "",
-        d.org ?? "", d.from, d.to, d.roundTrip ? 1 : 0, d.date, d.time ?? "", d.pax, note,
-      ),
-      db.prepare(
-        "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) VALUES (?, NULL, 'requested', 'client', 'Request received.')",
-      ).bind(quoteId),
-    ]);
-    if (saved.some((result) => !result.success)) {
+    try {
+      await db.batch([
+        db.prepare(
+          `INSERT INTO quotes (
+            id, idempotency_key, request_hash, locale, name, phone, email, organization,
+            origin, destination, round_trip, flight_date, flight_time, passengers, notes
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ).bind(
+          quoteId, d.idempotencyKey, requestHash, d.locale, d.name, d.phone, d.email ?? "",
+          d.org ?? "", d.from, d.to, d.roundTrip ? 1 : 0, d.date, d.time ?? "", d.pax, note,
+        ),
+        db.prepare(
+          "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) VALUES (?, NULL, 'requested', 'client', 'Request received.')",
+        ).bind(quoteId),
+      ]);
+    } catch (error) {
+      // A concurrent submit with the same idempotency key may have won the insert.
       const duplicate = await db.prepare(
         "SELECT id, request_hash FROM quotes WHERE idempotency_key = ?",
       ).bind(d.idempotencyKey).first<{ id: string; request_hash: string | null }>();
       if (!duplicate || duplicate.request_hash !== requestHash) {
-        console.error("[quote] Could not persist flight request.", saved.map((result) => result.error));
+        console.error("[quote] Could not persist flight request.", error);
         return NextResponse.json({ ok: false, error: "persistence_failed" }, { status: 503 });
       }
       quoteId = duplicate.id;

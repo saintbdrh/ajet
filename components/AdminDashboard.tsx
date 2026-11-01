@@ -6,7 +6,7 @@ import { t, type Locale } from "@/lib/i18n";
 import { adminConfirm, adminStatusText, adminText, cmsFieldText, cmsSectionText } from "@/lib/admin-dictionary";
 import ImagePicker from "@/components/ImagePicker";
 import AdminHistory from "@/components/AdminHistory";
-import { defaultMediaSlots, mediaUrl, type MediaSlot } from "@/lib/content";
+import { defaultMediaSlots, mediaUrl, slotStill, type MediaSlot } from "@/lib/media";
 import { minorToMajor } from "@/lib/money";
 import type { AdminAircraft, AdminDestination, AdminQuote, DispatchAircraft, QuoteHistory, QuoteRevision } from "@/lib/admin-types";
 import type { AdminRole } from "@/lib/admin";
@@ -217,10 +217,13 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
           body: JSON.stringify({
             key: photoForm.key,
             imageKey: photoForm.imageKey,
+            posterKey: photoForm.posterKey,
             focalX: photoForm.focalX,
             focalY: photoForm.focalY,
             altMn: photoForm.alt.mn,
             altEn: photoForm.alt.en,
+            creditText: photoForm.creditText,
+            creditUrl: photoForm.creditUrl,
           }),
         });
         const response = await request<ItemsResponse<AdminPhoto>>("/api/admin/photos");
@@ -235,14 +238,22 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
       }
   }
 
-  function updatePhoto(value: { imageKey: string | null; focalX: number; focalY: number; altMn: string; altEn: string }) {
-      setPhotoForm((current) => current ? {
+  function updatePhoto(value: { imageKey: string | null; posterKey: string | null; focalX: number; focalY: number; altMn: string; altEn: string }) {
+      setPhotoForm((current) => {
+        if (!current) return current;
+        // A newly uploaded file replaces the old one, so the old file's credit no longer applies.
+        const replaced = value.imageKey !== null && value.imageKey !== current.imageKey;
+        return {
         ...current,
         imageKey: value.imageKey ?? current.imageKey,
+        posterKey: value.imageKey ? value.posterKey : current.posterKey,
+        creditText: replaced ? "" : current.creditText,
+        creditUrl: replaced ? "" : current.creditUrl,
         focalX: value.focalX,
         focalY: value.focalY,
         alt: { mn: value.altMn, en: value.altEn },
-      } : current);
+        };
+      });
   }
 
   async function restorePreviousPhoto(item: AdminPhoto) {
@@ -608,7 +619,7 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
               {locale === "mn" && <p className="admin-review-note">{adminText(locale, "languageReview")}</p>}
               <div className="photo-slot-grid">{orderedPhotos.map((item) => (
                 <button className="photo-slot-card" type="button" key={item.key} onClick={() => setPhotoForm(item)}>
-                  <span className="photo-slot-thumb"><img src={mediaUrl(item.imageKey)} alt={item.alt[locale]} style={{ objectPosition: `${item.focalX}% ${item.focalY}%` }} /></span>
+                  <span className="photo-slot-thumb"><img src={mediaUrl(slotStill(item))} alt={item.alt[locale]} style={{ objectPosition: `${item.focalX}% ${item.focalY}%` }} /></span>
                   <strong>{photoLabel(item.key)}</strong>
                   <span>{adminText(locale, "aspectLandscape")}</span>
                 </button>
@@ -619,15 +630,22 @@ export default function AdminDashboard({ email, role, logoutUrl }: { email: stri
                 <ImagePicker
                   locale={locale}
                   imageKey={photoForm.imageKey}
+                  posterKey={photoForm.posterKey}
                   focalX={photoForm.focalX}
                   focalY={photoForm.focalY}
                   altMn={photoForm.alt.mn}
                   altEn={photoForm.alt.en}
+                  allowVideo
                   wide
                   aspectRatio={photoForm.key === "hero" || photoForm.key.startsWith("journey") ? 16 / 9 : 4 / 3}
                   onChange={updatePhoto}
                 />
                 <p className="image-picker-help">{adminText(locale, photoForm.key === "hero" || photoForm.key.startsWith("journey") ? "aspectLandscape" : "aspectPortrait")}</p>
+                <div className="admin-two">
+                  <label>{adminText(locale, "creditText")}<input maxLength={200} value={photoForm.creditText} onChange={(event) => setPhotoForm({ ...photoForm, creditText: event.target.value })} /></label>
+                  <label>{adminText(locale, "creditUrl")}<input type="url" pattern="https://.*" maxLength={500} value={photoForm.creditUrl} onChange={(event) => setPhotoForm({ ...photoForm, creditUrl: event.target.value })} /></label>
+                </div>
+                <p className="image-picker-help">{adminText(locale, "creditHelp")}</p>
                 {photoForm.previousRevisionId && <button type="button" className="admin-link" disabled={busy} onClick={() => void restorePreviousPhoto(photoForm)}>{adminText(locale, "restorePrevious")}</button>}
                 <div className="admin-form-actions admin-save-bar"><button type="submit" className="btn" disabled={busy}>{busy ? adminText(locale, "saving") : adminText(locale, "save")}</button><button type="button" className="admin-link" onClick={() => setPhotoForm(null)}>{adminText(locale, "cancel")}</button></div>
               </form>}

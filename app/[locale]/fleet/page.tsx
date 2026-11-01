@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
-import { getFleet, getMediaSlots, getSiteCopy, mediaUrl } from "@/lib/content";
+import { getFleet, getMediaSlots, getSiteCopy, mediaUrl, slotStill } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -28,7 +28,7 @@ export default async function Fleet({ params }: { params: Promise<{ locale: stri
         if (a.payloadKg) specs.push([d.fleet.payload, `${a.payloadKg} kg`]);
         return (
           <article key={a.id} className="ac rv">
-            <div className="ph"><img src={a.imageKey ? mediaUrl(a.imageKey) : mediaUrl(fallbackPhotos[index % 3].imageKey)} alt={a.alt[locale]} loading="lazy" style={{ objectPosition: `${a.focalX}% ${a.focalY}%` }} /></div>
+            <div className="ph"><img src={a.imageKey ? mediaUrl(a.imageKey) : mediaUrl(slotStill(fallbackPhotos[index % 3]))} alt={a.alt[locale]} loading="lazy" style={{ objectPosition: `${a.focalX}% ${a.focalY}%` }} /></div>
             <div className="bd"><span className="tag">{d.fleet.kicker}</span>
               <h2>{a.name}</h2>
               {a.desc?.[locale] && <p>{a.desc[locale]}</p>}

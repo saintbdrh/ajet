@@ -2,8 +2,6 @@
 
 declare global {
   interface CloudflareEnv {
-    DB: D1Database;
-    MEDIA: R2Bucket;
     CF_ACCESS_TEAM_DOMAIN: string;
     CF_ACCESS_AUD: string;
     ADMIN_ALLOWED_EMAILS: string;

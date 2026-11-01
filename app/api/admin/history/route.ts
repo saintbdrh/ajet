@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getDatabase } from "@/lib/cloudflare";
+import { getDatabase, type Statement } from "@/lib/db";
 import { isAdminResponse, requireAdmin } from "@/lib/admin-api";
 import { defaultMediaSlots } from "@/lib/content";
 
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "Choose an item to view its history." }, { status: 400 });
   }
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const result = await db.prepare(
     `SELECT id, entity_type, entity_id, snapshot_json, actor, created_at
      FROM content_revisions WHERE entity_type = ? AND entity_id = ?
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
   ) return NextResponse.json({ ok: false, error: "Choose a valid item." }, { status: 400 });
 
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const revision = await db.prepare(
     "SELECT id, entity_type, entity_id, snapshot_json FROM content_revisions WHERE id = ?",
   ).bind(revisionId).first<Pick<RevisionRow, "id" | "entity_type" | "entity_id" | "snapshot_json">>();
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
   const restore = rawSnapshot.before as Record<string, unknown> | null;
   let before: unknown;
   let after: unknown;
-  let statements: D1PreparedStatement[];
+  let statements: Statement[];
 
   if (type === "copy") {
     const [locale, key] = id.split(":");
@@ -135,19 +135,28 @@ export async function POST(request: Request) {
       ).bind(locale, key, String(value))];
     after = value === null || value === undefined ? null : { value: String(value) };
   } else if (type === "photo") {
-    before = await db.prepare("SELECT slot_key, image_key, focal_x, focal_y, alt_mn, alt_en FROM media_slots WHERE slot_key = ?").bind(id).first();
-    const photo = restore ?? {
-      slot_key: id,
-      image_key: defaultMediaSlots.find((slot) => slot.key === id)?.imageKey ?? "/img/hero.jpg",
-      focal_x: 50, focal_y: 50, alt_mn: "", alt_en: "",
+    before = await db.prepare(
+      "SELECT slot_key, image_key, poster_key, focal_x, focal_y, alt_mn, alt_en, credit_text, credit_url FROM media_slots WHERE slot_key = ?",
+    ).bind(id).first();
+    const fallback = defaultMediaSlots.find((slot) => slot.key === id);
+    // Snapshots saved before video support have no poster or credit fields.
+    const photo: Record<string, unknown> = {
+      poster_key: null, credit_text: "", credit_url: "",
+      ...(restore ?? {
+        slot_key: id,
+        image_key: fallback?.imageKey ?? "/img/hero.jpg",
+        focal_x: 50, focal_y: 50, alt_mn: "", alt_en: "",
+        credit_text: fallback?.creditText ?? "", credit_url: fallback?.creditUrl ?? "",
+      }),
     };
     statements = [db.prepare(
-      `INSERT INTO media_slots (slot_key, image_key, focal_x, focal_y, alt_mn, alt_en, updated_at, updated_by)
-       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
-       ON CONFLICT(slot_key) DO UPDATE SET image_key = excluded.image_key, focal_x = excluded.focal_x,
-         focal_y = excluded.focal_y, alt_mn = excluded.alt_mn, alt_en = excluded.alt_en,
+      `INSERT INTO media_slots (slot_key, image_key, poster_key, focal_x, focal_y, alt_mn, alt_en, credit_text, credit_url, updated_at, updated_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+       ON CONFLICT(slot_key) DO UPDATE SET image_key = excluded.image_key, poster_key = excluded.poster_key,
+         focal_x = excluded.focal_x, focal_y = excluded.focal_y, alt_mn = excluded.alt_mn, alt_en = excluded.alt_en,
+         credit_text = excluded.credit_text, credit_url = excluded.credit_url,
          updated_at = CURRENT_TIMESTAMP, updated_by = excluded.updated_by`,
-    ).bind(id, photo.image_key, photo.focal_x, photo.focal_y, photo.alt_mn, photo.alt_en, authorization.email)];
+    ).bind(id, photo.image_key, photo.poster_key, photo.focal_x, photo.focal_y, photo.alt_mn, photo.alt_en, photo.credit_text, photo.credit_url, authorization.email)];
     after = photo;
   } else if (type === "price") {
     before = await db.prepare("SELECT * FROM pricing_items WHERE id = ?").bind(id).first();

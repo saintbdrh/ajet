@@ -1,3 +1,4 @@
+import type { Database } from "@/lib/db";
 type Delivery = boolean | null;
 export type NotificationOutcomes = { telegram: Delivery; email: Delivery };
 
@@ -75,7 +76,7 @@ export async function notifyClient(to: string, subject: string, text: string, en
 }
 
 export async function recordNotificationOutcomes(
-  db: D1Database,
+  db: Database,
   quoteId: string,
   event: "request_received" | "quote_sent" | "client_approved" | "client_declined" | "flight_confirmed",
   outcomes: NotificationOutcomes,

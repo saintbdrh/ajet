@@ -1,5 +1,6 @@
+import type { Database } from "@/lib/db";
 export function contentRevisionStatement(
-  db: D1Database,
+  db: Database,
   entityType: "copy" | "photo" | "price" | "aircraft" | "destination",
   entityId: string,
   before: unknown,

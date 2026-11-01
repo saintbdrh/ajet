@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
 import RouteMap from "@/components/RouteMap";
-import { getDestinations, getMediaSlots, getPricing, getSiteCopy, mediaUrl } from "@/lib/content";
+import { getDestinations, getMediaSlots, getPricing, getSiteCopy, mediaUrl, slotStill } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
 import { getWeather } from "@/lib/weather";
 import { formatMinorAmount } from "@/lib/money";
@@ -32,7 +32,7 @@ export default async function Destinations({ params }: { params: Promise<{ local
       <div className="grid destination-showcase">
         {dest.map((p, i) => (
           <article key={p.id} className="place-card rv">
-            <div className="place-image"><img src={p.imageKey ? mediaUrl(p.imageKey) : mediaUrl(fallbackPhotos[i % 2].imageKey)} alt={p.alt[locale]} loading="lazy" style={{ objectPosition: `${p.focalX}% ${p.focalY}%` }} /></div>
+            <div className="place-image"><img src={p.imageKey ? mediaUrl(p.imageKey) : mediaUrl(slotStill(fallbackPhotos[i % 2]))} alt={p.alt[locale]} loading="lazy" style={{ objectPosition: `${p.focalX}% ${p.focalY}%` }} /></div>
             <div className="place-body"><h2>{p.name[locale]}</h2>
               {p.desc?.[locale] && <p>{p.desc[locale]}</p>}
               {prices.filter((price) => price.destinationId === p.id).map((price) => (

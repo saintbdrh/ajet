@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getDatabase } from "@/lib/cloudflare";
+import { getDatabase } from "@/lib/db";
 import { isAdminResponse, requireAdmin } from "@/lib/admin-api";
 import { contentRevisionStatement } from "@/lib/content-revisions";
 import { majorToMinor } from "@/lib/money";
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
   const authorization = await requireAdmin(request, ["content_editor"]);
   if (isAdminResponse(authorization)) return authorization;
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const result = await db.prepare(
     `SELECT id, kind, label_mn, label_en, note_mn, note_en, amount_minor, currency, unit,
       destination_id, aircraft_id, is_published, order_index, updated_at
@@ -79,7 +79,7 @@ export async function PUT(request: Request) {
   const reorder = reorderSchema.safeParse(raw);
   if (reorder.success) {
     const db = await getDatabase();
-    if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+    if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
     const items = reorder.data.items;
     const rows = await db.prepare(
       `SELECT * FROM pricing_items WHERE id IN (${items.map(() => "?").join(", ")})`,
@@ -118,7 +118,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Invalid price amount." }, { status: 400 });
   }
   const db = await getDatabase();
-  if (!db) return NextResponse.json({ ok: false, error: "D1 is unavailable." }, { status: 503 });
+  if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const item = parsed.data;
   const previous = await db.prepare("SELECT * FROM pricing_items WHERE id = ?").bind(item.id).first();
   const current = {
