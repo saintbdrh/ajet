@@ -1,30 +1,62 @@
-import { getDatabase } from "@/lib/db";
+import { getDatabase } from "@/lib/cloudflare";
 import { isCmsCopyKey, type CmsCopy, type Locale } from "@/lib/i18n";
-import { defaultMediaSlots, type Localized, type MediaSlot } from "@/lib/media";
 
-export { defaultMediaSlots, mediaUrl, slotStill, type Localized, type MediaSlot } from "@/lib/media";
+export type Localized = { mn: string; en: string };
+export type MediaSlot = {
+  key: string;
+  imageKey: string;
+  focalX: number;
+  focalY: number;
+  alt: Localized;
+};
+export const defaultMediaSlots: MediaSlot[] = [
+  { key: "hero", imageKey: "/img/ajet-hero-poster.png", focalX: 50, focalY: 50, alt: { mn: "Ajet нисдэг тэрэгний дүрслэл", en: "Ajet helicopter cinematic render" } },
+  { key: "membership", imageKey: "/img/lake.jpg", focalX: 50, focalY: 50, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" } },
+  { key: "corporate", imageKey: "/img/mountains.jpg", focalX: 50, focalY: 50, alt: { mn: "Уулсын оргил", en: "Mountain peaks" } },
+  { key: "journey-01", imageKey: "/img/lake.jpg", focalX: 50, focalY: 52, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" } },
+  { key: "journey-02", imageKey: "/img/ajet-aircraft-side.png", focalX: 58, focalY: 50, alt: { mn: "Нисдэг тэрэгний бүхээг", en: "A helicopter in flight" } },
+  { key: "journey-03", imageKey: "/img/hero.jpg", focalX: 65, focalY: 50, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" } },
+  { key: "journey-04", imageKey: "/img/mountains.jpg", focalX: 50, focalY: 48, alt: { mn: "Уулсын оргил", en: "Mountain peaks" } },
+  { key: "journey-05", imageKey: "/img/lake.jpg", focalX: 50, focalY: 44, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" } },
+  { key: "journey-06", imageKey: "/img/mountains.jpg", focalX: 50, focalY: 57, alt: { mn: "Уулсын дээгүүрх нислэг", en: "A flight above mountain peaks" } },
+  { key: "journey-07", imageKey: "/img/hero.jpg", focalX: 50, focalY: 54, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" } },
+];
+
+export function mediaUrl(imageKey: string): string {
+  return imageKey.startsWith("/img/") ? imageKey : `/media/${imageKey}`;
+}
+
+/**
+ * Picks `count` media slots whose imagery varies from tile to tile, so a preview
+ * build with only a handful of photographs never shows the same picture twice in
+ * a row. Order follows the slots table.
+ */
+export function variedSlots(slots: MediaSlot[], count: number): MediaSlot[] {
+  const seen = new Set<string>();
+  const unique = slots.filter((slot) => {
+    if (seen.has(slot.imageKey)) return false;
+    seen.add(slot.imageKey);
+    return true;
+  });
+  const pool = unique.length > 0 ? unique : slots;
+  if (pool.length === 0) return [];
+  return Array.from({ length: count }, (_, index) => pool[index % pool.length]);
+}
 
 export async function getMediaSlots(): Promise<MediaSlot[]> {
   const db = await getDatabase();
   if (!db) return defaultMediaSlots;
   const result = await db.prepare(
-    `SELECT slot_key, image_key, poster_key, focal_x, focal_y, alt_mn, alt_en, credit_text, credit_url
-     FROM media_slots ORDER BY slot_key`,
-  ).all<{
-    slot_key: string; image_key: string; poster_key: string | null; focal_x: number; focal_y: number;
-    alt_mn: string; alt_en: string; credit_text: string; credit_url: string;
-  }>();
-  if (!result.success) throw new Error(result.error ?? "Could not load section photos from the database.");
+    "SELECT slot_key, image_key, focal_x, focal_y, alt_mn, alt_en FROM media_slots ORDER BY slot_key",
+  ).all<{ slot_key: string; image_key: string; focal_x: number; focal_y: number; alt_mn: string; alt_en: string }>();
+  if (!result.success) throw new Error(result.error ?? "Could not load section photos from D1.");
   if (!result.results.length) return defaultMediaSlots;
   return result.results.map((row) => ({
     key: row.slot_key,
     imageKey: row.image_key,
-    posterKey: row.poster_key,
     focalX: row.focal_x,
     focalY: row.focal_y,
     alt: { mn: row.alt_mn, en: row.alt_en },
-    creditText: row.credit_text,
-    creditUrl: row.credit_url,
   }));
 }
 
@@ -93,7 +125,7 @@ export async function getFleet(): Promise<Aircraft[]> {
     FROM aircraft LEFT JOIN aircraft_display display ON display.aircraft_id = aircraft.id
     WHERE is_published = 1 ORDER BY order_index`,
   ).all<AircraftRow>();
-  if (!result.success) throw new Error(result.error ?? "Could not load aircraft from the database.");
+  if (!result.success) throw new Error(result.error ?? "Could not load aircraft from D1.");
   return result.results.map((row) => ({
     id: row.id,
     name: row.name,
@@ -123,7 +155,7 @@ export async function getDestinations(): Promise<Destination[]> {
     FROM destinations LEFT JOIN destination_display display ON display.destination_id = destinations.id
     WHERE is_published = 1 ORDER BY order_index`,
   ).all<DestinationRow>();
-  if (!result.success) throw new Error(result.error ?? "Could not load destinations from the database.");
+  if (!result.success) throw new Error(result.error ?? "Could not load destinations from D1.");
   return result.results.map((row) => ({
     id: row.id,
     name: { mn: row.name_mn, en: row.name_en },
@@ -153,7 +185,7 @@ export async function getPricing(): Promise<PricingItem[]> {
     unit: PricingItem["unit"]; destination_id: string | null; aircraft_id: string | null;
     order_index: number;
   }>();
-  if (!result.success) throw new Error(result.error ?? "Could not load published prices from the database.");
+  if (!result.success) throw new Error(result.error ?? "Could not load published prices from D1.");
   return result.results.map((row) => ({
     id: row.id,
     kind: row.kind,
@@ -174,7 +206,7 @@ export async function getSiteCopy(locale: Locale): Promise<CmsCopy> {
   const result = await db.prepare(
     "SELECT key, value FROM site_copy WHERE locale = ?",
   ).bind(locale).all<{ key: string; value: string }>();
-  if (!result.success) throw new Error(result.error ?? "Could not load website copy from the database.");
+  if (!result.success) throw new Error(result.error ?? "Could not load website copy from D1.");
 
   const copy: CmsCopy = {};
   for (const row of result.results) {

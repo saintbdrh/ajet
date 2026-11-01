@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
+import "@fontsource/noto-sans/latin-400.css";
+import "@fontsource/noto-sans/latin-600.css";
+import "@fontsource/noto-sans/cyrillic-400.css";
+import "@fontsource/noto-sans/cyrillic-600.css";
 import type { ReactNode } from "react";
 import "../globals.css";
+import "../site.css";
 import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 import ScrollMotion from "@/components/ScrollMotion";
 import { BRAND, isLocale, locales, t } from "@/lib/i18n";
-import { getMediaSlots, getSiteCopy } from "@/lib/content";
-
-const serif = Cormorant_Garamond({ subsets: ["cyrillic", "cyrillic-ext", "latin"], weight: ["400","500","600"], variable: "--font-serif", display: "swap" });
-const sans = Manrope({ subsets: ["cyrillic", "cyrillic-ext", "latin"], weight: ["400","500","600","700"], variable: "--font-sans", display: "swap" });
+import { getSiteCopy } from "@/lib/content";
 
 export const dynamicParams = false;
 export const dynamic = "force-dynamic";
@@ -19,9 +20,10 @@ export const generateStaticParams = () => locales.map((locale) => ({ locale }));
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
+  const d = t(locale);
   return {
-    title: { default: `${BRAND} — Private Helicopter Charter`, template: `%s | ${BRAND}` },
-    description: t(locale).desc,
+    title: { default: `${BRAND} — Private Helicopter Charter in Mongolia`, template: `%s | ${BRAND}` },
+    description: d.desc,
     alternates: { languages: { mn: "/mn", en: "/en" } },
   };
 }
@@ -29,57 +31,38 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function RootLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const [copy, slots] = await Promise.all([getSiteCopy(locale), getMediaSlots()]);
+  const copy = await getSiteCopy(locale);
   const d = t(locale, copy);
-  const credits = Array.from(new Map(
-    slots.filter((slot) => slot.creditText).map((slot) => [slot.creditText, slot.creditUrl]),
-  ));
-  const contactPhone = copy.contactPhone?.trim();
-  const contactEmail = copy.contactEmail?.trim();
-  const isConfiguredPhone = contactPhone && contactPhone !== "+976 7000 0000";
-  const isConfiguredEmail = contactEmail && !contactEmail.toLowerCase().endsWith("@example.com");
+
+  const rawPhone = copy.contactPhone?.trim();
+  const rawEmail = copy.contactEmail?.trim();
+  const isReal = (value?: string) =>
+    !!value && !value.includes("[") && value !== "+976 7000 0000" && !value.toLowerCase().endsWith("@example.com");
+  const phone = isReal(rawPhone) ? rawPhone : undefined;
+  const email = isReal(rawEmail) ? rawEmail : undefined;
+
   return (
-    <html lang={locale} data-scroll-behavior="smooth" className={`${serif.variable} ${sans.variable}`}>
-      <body>
+    <html lang={locale} data-scroll-behavior="smooth">
+      <body className="site">
+        <div id="top" />
         <ScrollMotion />
         <SiteHeader
           locale={locale}
-          fleetLabel={d.nav.fleet}
-          destinationsLabel={d.nav.destinations}
-          quoteLabel={d.nav.quote}
+          brand={BRAND}
+          brandTag={d.brandTag}
+          phone={phone}
+          labels={{
+            fleet: d.nav.fleet,
+            services: d.nav.services,
+            safety: d.nav.safety,
+            about: d.nav.about,
+            helipads: d.nav.helipads,
+            destinations: d.nav.destinations,
+            quote: d.nav.quote,
+          }}
         />
         <main>{children}</main>
-        <footer className="foot"><div className="wrap">
-          <div className="cols">
-            <div>
-              <Link href={`/${locale}`} className="brand">{BRAND}</Link>
-              <p className="note">{d.foot.tagline} {d.foot.note}</p>
-            </div>
-            <div><h4>{d.foot.explore}</h4><ul>
-              <li><Link href={`/${locale}/fleet`}>{d.nav.fleet}</Link></li>
-              <li><Link href={`/${locale}/destinations`}>{d.nav.destinations}</Link></li>
-              <li><Link href={`/${locale}/quote`}>{d.nav.quote}</Link></li></ul></div>
-            <div><h4>{d.foot.company}</h4><ul>
-              <li><a href="#membership">{locale === "mn" ? "Гишүүнчлэл" : "Membership"}</a></li>
-              <li><a href="#corporate">{locale === "mn" ? "Корпорац" : "Corporate"}</a></li>
-              <li><a href="#faq">FAQ</a></li></ul></div>
-            <div><h4>{d.foot.contact}</h4><ul>
-              {isConfiguredPhone && <li><a href={`tel:${contactPhone.replace(/[^\d+]/g, "")}`}>{contactPhone}</a></li>}
-              {isConfiguredEmail && <li><a href={`mailto:${contactEmail}`}>{contactEmail}</a></li>}
-              {!isConfiguredPhone && !isConfiguredEmail && <li><Link href={`/${locale}/quote`}>{d.nav.quote}</Link></li>}
-            </ul></div>
-          </div>
-          <div className="bar"><span>{d.foot.rights}</span><span>{d.foot.legal}</span></div>
-          {credits.length > 0 && <p className="photo-credit">
-            {locale === "mn" ? "Зургийн эх сурвалж:" : "Photo credits:"}{" "}
-            {credits.map(([text, url], index) => (
-              <span key={text}>
-                {index > 0 && " · "}
-                {url ? <a href={url} target="_blank" rel="noreferrer">{text}</a> : text}
-              </span>
-            ))}
-          </p>}
-        </div></footer>
+        <SiteFooter locale={locale} brand={BRAND} d={d} phone={phone} email={email} />
       </body>
     </html>
   );

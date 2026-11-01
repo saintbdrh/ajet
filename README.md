@@ -2,6 +2,18 @@
 
 Premium Mongolian helicopter charter website built with Next.js 16, Postgres, Cloudflare Workers, R2, and Cloudflare Access. The database layer is portable (any Postgres via `DATABASE_URL`); R2, Access, and Workers hosting are still Cloudflare-specific.
 
+## Premium redesign
+
+The homepage uses the supplied AJET helicopter hero film with a poster fallback, pause control and reduced-motion support. Uploaded custom hero photography overrides the default film.
+
+The homepage and fleet page include an interactive EC145 viewer: drag/touch/arrow-key rotation, wheel/pinch/button zoom, reset and front/profile/rear camera presets. The supplied Blender model is exported as a Draco-compressed 707 KB GLB with 23 material groups. Model-viewer 4.4.0 and its Draco decoder are vendored under `public/vendor` with licences; the model and viewer load only after the visitor selects Explore in 3D. Static renders remain available if WebGL or model loading fails. Original `.blend` files are never modified. Re-export with Blender using `scripts/export-aircraft.py`; its command is documented in the script. These visual assets do not establish verified operational specifications.
+
+The staff workspace has persistent navigation, a light interface, section search, request-status filters, queue counts and unsaved-copy protection. Existing server-side roles and Cloudflare Access remain required. Request search and counts cover the latest 250 loaded requests, not the entire database.
+
+For a local design review, run `npm run dev -- --webpack` and visit `/admin/design-preview`. This development-only page uses clearly labelled illustrative records and disables its dashboard save operations. It returns 404 in production. The real `/admin` and all admin API routes retain their existing authentication and authorisation.
+
+Fonts are served from the installed Noto Sans package, including Cyrillic, without build-time Google Fonts downloads. No database schema changes are needed for this redesign.
+
 ## Local preview
 
 Requires Node.js 22+ and Docker.
@@ -71,7 +83,7 @@ The Cloudflare account, production database, buckets, Access policy, domain, and
 - Fleet specifications and destination coordinates stay hidden from the public map/specification view until an editor adds an HTTPS reference and explicitly marks the data checked. The checkbox records a human attestation; it does not independently validate the source or the aircraft's operational status.
 - Quote lifecycle transitions and quote-related dispatcher actions are recorded separately from the website content revision history.
 - Request submissions use an idempotency key, persist before delivery, and record email/Telegram delivery attempts. If every configured channel fails, the client receives an error and can retry with the same key; there is no scheduled notification retry worker.
-- Dispatcher queues currently show the most recent 250 requests. Search/filter controls, a calendar, aircraft scheduling/conflict checks, and a full audit-log viewer are not implemented.
+- Dispatcher queues show the most recent 250 requests, with text search and status filters across those loaded records. A calendar, aircraft scheduling/conflict checks, and a full audit-log viewer are not implemented.
 
 ## Operational and security limits
 
