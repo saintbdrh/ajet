@@ -5,9 +5,11 @@ import CabinExperience from "@/components/CabinExperience";
 import GroundCare from "@/components/GroundCare";
 import ServiceCollection from "@/components/ServiceCollection";
 import AircraftPortrait from "@/components/AircraftPortrait";
+import MediaView from "@/components/MediaView";
 import Reveal from "@/components/Reveal";
 import Value from "@/components/Value";
-import { getDestinations, getFleet, getMediaSlots, getSiteCopy, mediaUrl, variedSlots } from "@/lib/content";
+import { getDestinations, getFleet, getMediaSlots, getSiteCopy, mediaUrl, slotStill, variedSlots, type MediaSlot } from "@/lib/content";
+import { isVideoKey } from "@/lib/media";
 import { isLocale, t } from "@/lib/i18n";
 import { experienceCopy } from "@/lib/experiences";
 import { brandStory } from "@/lib/brand";
@@ -20,6 +22,12 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   ]);
   const d = t(locale, copy);
   const slot = (key: string) => slots.find((item) => item.key === key)!;
+  const slotMedia = (item: MediaSlot) => ({
+    src: mediaUrl(item.imageKey),
+    video: isVideoKey(item.imageKey),
+    poster: item.posterKey ? mediaUrl(item.posterKey) : undefined,
+    style: { objectPosition: `${item.focalX}% ${item.focalY}%` },
+  });
   const hero = slot("hero");
   const usesBrandImage = ["/img/hero.jpg", "/img/ajet-hero-poster.png", "/img/brand/window-view.webp"].includes(hero.imageKey);
   const story = brandStory[locale];
@@ -37,10 +45,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     <>
       <section className="hero brand-hero immersive-hero">
         <div className="immersive-hero__media">
-            {usesBrandImage ? <StudioHero locale={locale} /> : <img
-              src={mediaUrl(hero.imageKey)} alt={hero.alt[locale]} fetchPriority="high"
-              style={{ objectPosition: `${hero.focalX}% ${hero.focalY}%` }}
-            />}
+            {usesBrandImage ? <StudioHero locale={locale} /> : <MediaView {...slotMedia(hero)} alt={hero.alt[locale]} loading="eager" fetchPriority="high" />}
         </div>
         <div className="immersive-hero__veil" aria-hidden="true" />
         <div className="hero__inner wrap">
@@ -122,7 +127,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                   <article className="acft" key={aircraft.id}>
                     <div className="acft__media">
                       <img
-                        src={aircraft.imageKey ? mediaUrl(aircraft.imageKey) : mediaUrl(fleetFallback[index % fleetFallback.length].imageKey)}
+                        src={aircraft.imageKey ? mediaUrl(aircraft.imageKey) : mediaUrl(slotStill(fleetFallback[index % fleetFallback.length]))}
                         alt={aircraft.alt[locale]}
                         loading="lazy"
                         style={{ objectPosition: `${aircraft.focalX}% ${aircraft.focalY}%` }}
@@ -176,7 +181,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         <div className="rail" role="list">
           {gallery.map((item, index) => (
             <figure className="rail__item" role="listitem" key={`${item.key}-${index}`}>
-              <img src={mediaUrl(item.imageKey)} alt={item.alt[locale]} loading="lazy" style={{ objectPosition: `${item.focalX}% ${item.focalY}%` }} />
+              <img src={mediaUrl(slotStill(item))} alt={item.alt[locale]} loading="lazy" style={{ objectPosition: `${item.focalX}% ${item.focalY}%` }} />
               <figcaption>{String(index + 1).padStart(2, "0")} / {d.gallery.handle}</figcaption>
             </figure>
           ))}
@@ -216,12 +221,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         <div className="wrap about__grid">
           <Reveal direction="image">
             <div className="about__media">
-              <img
-                src={slot("corporate").imageKey === "/img/mountains.jpg" ? "/img/brand/mountain-view.webp" : mediaUrl(slot("corporate").imageKey)}
-                alt={slot("corporate").alt[locale]}
-                loading="lazy"
-                style={{ objectPosition: `${slot("corporate").focalX}% ${slot("corporate").focalY}%` }}
-              />
+              <MediaView {...slotMedia(slot("corporate"))} alt={slot("corporate").alt[locale]} />
             </div>
           </Reveal>
           <Reveal direction="right">
@@ -281,7 +281,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             {dest.slice(0, 4).map((place, index) => (
               <Link href={`/${locale}/destinations`} className="destcard rv" key={place.id}>
                 <img
-                  src={place.imageKey ? mediaUrl(place.imageKey) : mediaUrl(destinationFallback[index % destinationFallback.length].imageKey)}
+                  src={place.imageKey ? mediaUrl(place.imageKey) : mediaUrl(slotStill(destinationFallback[index % destinationFallback.length]))}
                   alt={place.alt[locale]}
                   loading="lazy"
                   style={{ objectPosition: `${place.focalX}% ${place.focalY}%` }}

@@ -59,7 +59,7 @@ export const defaultMediaSlots: MediaSlot[] = [
   { key: "membership", imageKey: "/img/brand/window-view.webp", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" }, ...noCredit },
   { key: "corporate", imageKey: "/img/ajet/ec145-cabin.webp", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "A-JET EC145-ийн бодит зорчигчийн бүхээг", en: "Actual A-JET EC145 passenger cabin" }, ...noCredit },
   { key: "journey-01", imageKey: "/img/ajet/ec145-rooftop.webp", posterKey: null, focalX: 50, focalY: 52, alt: { mn: "Дээврийн талбайд зогссон A-JET EC145", en: "A-JET EC145 parked on a rooftop helipad" }, ...noCredit },
-  { key: "journey-02", imageKey: "/img/ajet/studio-detail.webp", posterKey: null, focalX: 58, focalY: 50, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" }, ...heroCredit },
+  { key: "journey-02", imageKey: "/img/ajet/studio-detail.webp", posterKey: null, focalX: 58, focalY: 50, alt: { mn: "A-JET EC145 нисдэг тэрэгний студийн дүрслэл", en: "Studio rendering of the A-JET EC145 helicopter" }, ...heroCredit },
   { key: "journey-03", imageKey: "/img/ajet/ec145-cabin.webp", posterKey: null, focalX: 65, focalY: 50, alt: { mn: "A-JET EC145-ийн бодит зорчигчийн бүхээг", en: "Actual A-JET EC145 passenger cabin" }, ...heroCredit },
   { key: "journey-04", imageKey: "/img/brand/mountain-view.webp", posterKey: null, focalX: 50, focalY: 48, alt: { mn: "Уулсын оргил", en: "Mountain peaks" }, ...noCredit },
   { key: "journey-05", imageKey: "/img/brand/window-view.webp", posterKey: null, focalX: 50, focalY: 44, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" }, ...noCredit },

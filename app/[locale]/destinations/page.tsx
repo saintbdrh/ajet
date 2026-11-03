@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
 import RouteMap from "@/components/RouteMap";
 import Value from "@/components/Value";
-import { getDestinations, getMediaSlots, getSiteCopy, mediaUrl, variedSlots } from "@/lib/content";
+import { getDestinations, getMediaSlots, getSiteCopy, mediaUrl, slotStill, variedSlots } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
 import { getWeather } from "@/lib/weather";
 
@@ -52,7 +52,7 @@ export default async function Destinations({ params }: { params: Promise<{ local
               <article key={place.id} className="place rv">
                 <div className="place__media">
                   <img
-                    src={place.imageKey ? mediaUrl(place.imageKey) : mediaUrl(fallbackPhotos[index % fallbackPhotos.length].imageKey)}
+                    src={place.imageKey ? mediaUrl(place.imageKey) : mediaUrl(slotStill(fallbackPhotos[index % fallbackPhotos.length]))}
                     alt={place.alt[locale]}
                     loading="lazy"
                     style={{ objectPosition: `${place.focalX}% ${place.focalY}%` }}

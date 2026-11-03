@@ -8,12 +8,14 @@ export default function SiteFooter({
   d,
   phone,
   email,
+  credits = [],
 }: {
   locale: Locale;
   brand: string;
   d: Dict;
   phone?: string;
   email?: string;
+  credits?: [string, string][];
 }) {
   return (
     <footer className="foot">
@@ -71,7 +73,17 @@ export default function SiteFooter({
         </div>
 
         <p className="foot__note">{d.foot.note}</p>
-
+        {credits.length > 0 && (
+          <p className="foot__note foot__note--credit">
+            {locale === "mn" ? "Бусад зургийн эх сурвалж:" : "Additional photography:"}{" "}
+            {credits.map(([text, url], index) => (
+              <span key={text}>
+                {index > 0 && " · "}
+                {url ? <a href={url} target="_blank" rel="noreferrer">{text}</a> : text}
+              </span>
+            ))}
+          </p>
+        )}
       </div>
     </footer>
   );

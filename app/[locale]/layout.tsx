@@ -21,7 +21,7 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ScrollMotion from "@/components/ScrollMotion";
 import { BRAND, isLocale, locales, t } from "@/lib/i18n";
-import { getSiteCopy } from "@/lib/content";
+import { getMediaSlots, getSiteCopy } from "@/lib/content";
 
 export const dynamicParams = false;
 export const dynamic = "force-dynamic";
@@ -41,8 +41,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function RootLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const copy = await getSiteCopy(locale);
+  const [copy, slots] = await Promise.all([getSiteCopy(locale), getMediaSlots()]);
   const d = t(locale, copy);
+  const credits: [string, string][] = Array.from(new Map(
+    slots.filter((slot) => slot.creditText).map((slot) => [slot.creditText, slot.creditUrl]),
+  ));
 
   const rawPhone = copy.contactPhone?.trim();
   const rawEmail = copy.contactEmail?.trim();
@@ -73,7 +76,7 @@ export default async function RootLayout({ children, params }: { children: React
         />
         <a className="skip-link" href="#main-content">{locale === "mn" ? "Үндсэн агуулга руу" : "Skip to content"}</a>
         <main id="main-content">{children}</main>
-        <SiteFooter locale={locale} brand={BRAND} d={d} phone={phone} email={email} />
+        <SiteFooter locale={locale} brand={BRAND} d={d} phone={phone} email={email} credits={credits} />
       </body>
     </html>
   );

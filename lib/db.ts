@@ -94,9 +94,10 @@ export async function getDatabase(): Promise<Database | null> {
     throw new Error("DATABASE_URL is not configured.");
   }
   // Cached on globalThis so dev hot reloads reuse one pool; rebuilt if DATABASE_URL changes.
-  if (!globalForDb.ajetDb || globalForDb.ajetDb.url !== url) {
-    void globalForDb.ajetDb?.pool.end();
-    globalForDb.ajetDb = { url, pool: new pg.Pool({ connectionString: url, max: 10 }) };
+  let cached = globalForDb.ajetDb;
+  if (!cached || cached.url !== url) {
+    void cached?.pool.end();
+    cached = globalForDb.ajetDb = { url, pool: new pg.Pool({ connectionString: url, max: 10 }) };
   }
-  return new Database(globalForDb.ajetDb.pool);
+  return new Database(cached.pool);
 }
