@@ -39,7 +39,7 @@ export async function notifyOperations(text: string, env: CloudflareEnv | null):
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             from,
-            to: recipients.split(",").map((recipient) => recipient.trim()).filter(Boolean),
+            to: recipients.split(",").map((recipient: string) => recipient.trim()).filter(Boolean),
             subject: "Ajet flight request update",
             text,
           }),

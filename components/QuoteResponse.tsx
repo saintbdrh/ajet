@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 
 type Quote = {
+  service?: "charter" | "catering" | "photography";
   id: string;
   origin: string;
   destination: string;
@@ -76,8 +77,17 @@ const copy = {
 } as const;
 
 export default function QuoteResponse({ locale }: { locale: Locale }) {
-  const text = copy[locale];
+  const baseText = copy[locale];
   const [quote, setQuote] = useState<Quote | null>(null);
+  const text = quote?.service && quote.service !== "charter" ? { ...baseText,
+    eyebrow: locale === "mn" ? "ҮЙЛЧИЛГЭЭНИЙ ҮНИЙН САНАЛ" : "PRIVATE SERVICE QUOTE",
+    title: locale === "mn" ? "Үйлчилгээний саналаа шалгана уу" : "Review your service proposal",
+    passengers: locale === "mn" ? "Зочин / оролцогч" : "Guests / participants",
+    itinerary: locale === "mn" ? "Байршил / төслийн товч" : "Location / brief",
+    date: locale === "mn" ? "Огноо" : "Date", time: locale === "mn" ? "Цаг" : "Time",
+    approved: locale === "mn" ? "Саналыг зөвшөөрлөө. Үйлчилгээний баг захиалгыг тусад нь баталгаажуулна." : "Quote approved. Our service team must still confirm the booking.",
+    confirmed: locale === "mn" ? "Үйлчилгээний захиалга баталгаажлаа." : "Your service booking has been confirmed.",
+  } : baseText;
   const [token, setToken] = useState("");
   const linkToken = useRef<string | null>(null);
   const [error, setError] = useState("");

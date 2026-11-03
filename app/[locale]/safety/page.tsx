@@ -16,6 +16,8 @@ export default async function Safety({ params }: { params: Promise<{ locale: str
   if (!isLocale(locale)) notFound();
   const copy = await getSiteCopy(locale);
   const d = t(locale, copy);
+  const publicCerts = d.safety.certs.filter((cert) => !cert.title.includes("["));
+  const credentials = d.credentials.items.filter((item) => !item.includes("["));
 
   return (
     <>
@@ -35,31 +37,32 @@ export default async function Safety({ params }: { params: Promise<{ locale: str
               {d.safety.points.map((point) => <li key={point}><span aria-hidden="true">✓</span>{point}</li>)}
             </ul>
           </div>
-          <div className="certs certs--stack">
-            {d.safety.certs.map((cert) => (
+          {publicCerts.length > 0 && <div className="certs certs--stack">
+            {publicCerts.map((cert) => (
               <article className="cert" key={cert.label}>
                 <span className="cert__label">{cert.label}</span>
                 <h3><Value>{cert.title}</Value></h3>
                 <p>{cert.body}</p>
               </article>
             ))}
-          </div>
+          </div>}
         </div>
       </section>
 
-      <section className="section section--alt">
+      {credentials.length > 0 && <section className="section section--alt">
         <div className="wrap narrow">
           <Reveal>
             <p className="eyebrow">{d.credentials.label}</p>
             <ul className="credrow">
-              {d.credentials.items.map((item) => <li key={item}><Value>{item}</Value></li>)}
+              {credentials.map((item) => <li key={item}><Value>{item}</Value></li>)}
             </ul>
             <p className="note note--block">{d.credentials.note}</p>
-            <p className="note note--block">{d.placeholderNote}</p>
+
           </Reveal>
         </div>
       </section>
 
+      }
       <section className="cta cta--compact">
         <div className="wrap">
           <h2>{d.cta.title}</h2>

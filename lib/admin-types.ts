@@ -42,6 +42,8 @@ export type QuoteStatus =
   | "declined" | "expired" | "closed";
 
 export type AdminQuote = {
+  service?: "charter" | "catering" | "photography";
+  extras?: string[];
   id: string;
   locale: string;
   name: string;

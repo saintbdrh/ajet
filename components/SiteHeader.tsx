@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import LangSwitch from "@/components/LangSwitch";
+import { experienceCopy } from "@/lib/experiences";
 
 type NavLabels = {
   fleet: string;
@@ -29,6 +30,7 @@ export default function SiteHeader({
   labels: NavLabels;
   phone?: string;
 }) {
+  const extra = experienceCopy[locale];
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -61,6 +63,9 @@ export default function SiteHeader({
   const links: [string, string][] = [
     [`/${locale}/fleet`, labels.fleet],
     [`/${locale}/services`, labels.services],
+    [`/${locale}/airport-express`, extra.express],
+    [`/${locale}/lounges`, extra.lounges],
+    [`/${locale}/careers`, extra.careers],
     [`/${locale}/safety`, labels.safety],
     [`/${locale}/about`, labels.about],
     [`/${locale}/helipads`, labels.helipads],
@@ -68,22 +73,20 @@ export default function SiteHeader({
   ];
 
   return (
-    <header className={`hdr${isHome ? " hdr--over" : ""}${scrolled ? " is-scrolled" : ""}${open ? " is-open" : ""}`}>
+    <header className={`hdr${isHome ? " hdr--over" : ""}${scrolled ? " is-scrolled" : ""}${open ? " is-open" : ""}`} onKeyDown={(event) => { if (event.key === "Escape" && open) { close(); event.currentTarget.querySelector<HTMLButtonElement>(".hdr__burger")?.focus(); } }}>
       <div className="hdr__bar">
-        <Link href={`/${locale}`} className="hdr__brand" onClick={close}>
-          <span className="hdr__mark" aria-hidden="true" />
-          <span className="hdr__word">
-            {brand}
-            <small>{brandTag}</small>
-          </span>
+        <Link href={`/${locale}`} className="hdr__brand" onClick={close} aria-label={`${brand} — ${brandTag}`}>
+          <img className="brand-logo" src="/img/brand/ajet-logo.svg" width="138" height="41" alt={brand} />
         </Link>
 
-        <nav className="hdr__nav" aria-label="Main">
-          {links.map(([href, label]) => (
-            <Link key={href} href={href} onClick={close} className={pathname.startsWith(href) ? "is-active" : undefined}>
-              {label}
-            </Link>
+        <nav className="hdr__nav" aria-label={locale === "mn" ? "Үндсэн цэс" : "Main navigation"}>
+          {links.filter(([href]) => ["fleet", "services", "airport-express"].some((slug) => href.endsWith(`/${slug}`))).map(([href, label]) => (
+            <Link key={href} href={href} onClick={close} className={pathname.startsWith(href) ? "is-active" : undefined}>{label}</Link>
           ))}
+          <details className="hdr__explore" key={pathname} onKeyDown={(event) => { if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); } }}>
+            <summary>{extra.company}<span aria-hidden="true">＋</span></summary>
+            <div>{links.filter(([href]) => !["fleet", "services", "airport-express"].some((slug) => href.endsWith(`/${slug}`))).map(([href, label]) => <Link key={href} href={href} onClick={(event) => { close(); const details = event.currentTarget.closest("details"); if (details) details.open = false; }} className={pathname.startsWith(href) ? "is-active" : undefined}>{label}<span aria-hidden="true">↗</span></Link>)}</div>
+          </details>
         </nav>
 
         <div className="hdr__actions">
@@ -95,25 +98,26 @@ export default function SiteHeader({
           <button
             className="hdr__burger"
             type="button"
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={open ? (locale === "mn" ? "Цэс хаах" : "Close menu") : (locale === "mn" ? "Цэс нээх" : "Open menu")}
             aria-expanded={open}
             aria-controls="mobile-navigation"
             onClick={() => setOpen((value) => !value)}
+            onKeyDown={(event) => { if (event.key === "Escape") close(); }}
           >
             <span /><span />
           </button>
         </div>
       </div>
 
-      <div id="mobile-navigation" className="hdr__drawer" hidden={!open}>
+      <nav aria-label={locale === "mn" ? "Гар утасны цэс" : "Mobile navigation"} id="mobile-navigation" className="hdr__drawer" hidden={!open}>
         {links.map(([href, label], index) => (
           <Link key={href} href={href} onClick={close}>
-            <span>{String(index + 1).padStart(2, "0")}</span>
+            <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
             {label}
           </Link>
         ))}
         <Link href={`/${locale}/quote`} className="btn" onClick={close}>{labels.quote}</Link>
-      </div>
+      </nav>
     </header>
   );
 }

@@ -44,7 +44,7 @@ export default async function About({ params }: { params: Promise<{ locale: stri
             <div className="about__copy">
               <p>{d.about.body}</p>
               <dl className="about__facts">
-                {d.about.facts.map(([value, label]) => (
+                {d.about.facts.filter(([value]) => !value.includes("[")).map(([value, label]) => (
                   <div key={label}><dt><Value>{value}</Value></dt><dd>{label}</dd></div>
                 ))}
               </dl>
@@ -58,7 +58,7 @@ export default async function About({ params }: { params: Promise<{ locale: stri
         </div>
       </section>
 
-      <section className="section section--alt">
+      {d.pads.items.some((pad) => !pad.name.includes("[")) && <section className="section section--alt">
         <div className="wrap">
           <div className="section__head">
             <Reveal direction="left">
@@ -68,7 +68,7 @@ export default async function About({ params }: { params: Promise<{ locale: stri
             <Reveal direction="right"><p className="lede">{d.pads.intro}</p></Reveal>
           </div>
           <div className="padlist">
-            {d.pads.items.slice(0, 3).map((pad, index) => (
+            {d.pads.items.filter((pad) => !pad.name.includes("[")).slice(0, 3).map((pad, index) => (
               <article className="pad rv" key={pad.name}>
                 <span className="pad__index">{String(index + 1).padStart(2, "0")}</span>
                 <span className="pad__role">{pad.role}</span>
@@ -82,6 +82,7 @@ export default async function About({ params }: { params: Promise<{ locale: stri
         </div>
       </section>
 
+      }
       <section className="cta cta--compact">
         <div className="wrap">
           <h2>{d.cta.title}</h2>

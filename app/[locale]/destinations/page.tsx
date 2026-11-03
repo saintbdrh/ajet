@@ -4,10 +4,9 @@ import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
 import RouteMap from "@/components/RouteMap";
 import Value from "@/components/Value";
-import { getDestinations, getMediaSlots, getPricing, getSiteCopy, mediaUrl, variedSlots } from "@/lib/content";
+import { getDestinations, getMediaSlots, getSiteCopy, mediaUrl, variedSlots } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
 import { getWeather } from "@/lib/weather";
-import { formatMinorAmount } from "@/lib/money";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -17,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function Destinations({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const [copy, dest, prices, slots] = await Promise.all([getSiteCopy(locale), getDestinations(), getPricing(), getMediaSlots()]);
+  const [copy, dest, slots] = await Promise.all([getSiteCopy(locale), getDestinations(), getMediaSlots()]);
   const d = t(locale, copy);
   const fallbackPhotos = variedSlots(slots, Math.max(dest.length, 1));
   const wx = await Promise.all(dest.map((p) => getWeather(p.lat, p.lng)));
@@ -72,14 +71,6 @@ export default async function Destinations({ params }: { params: Promise<{ local
                       </div>
                     )}
                   </dl>
-
-                  {prices.filter((price) => price.destinationId === place.id).map((price) => (
-                    <p className="place__price" key={price.id}>
-                      <strong>{locale === "mn" ? "Үүнээс эхэлнэ" : "From"} {formatMinorAmount(price.amountMinor, price.currency, locale)}</strong>
-                      <span>{price.label[locale]}{price.note[locale] ? ` · ${price.note[locale]}` : ""}</span>
-                    </p>
-                  ))}
-                  {prices.some((price) => price.destinationId === place.id) && <p className="note">{d.priceDisclaimer}</p>}
 
                   {wx[index]?.status === "available" && (
                     <p className="note">

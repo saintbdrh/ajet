@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import CabinExperience from "@/components/CabinExperience";
 import AircraftPortrait from "@/components/AircraftPortrait";
 import Reveal from "@/components/Reveal";
 import Value from "@/components/Value";
@@ -28,6 +29,8 @@ export default async function Fleet({ params }: { params: Promise<{ locale: stri
         </div>
       </header>
 
+      <CabinExperience locale={locale} />
+
       <section className="section section--tight">
         <div className="wrap">
           <Reveal direction="image"><AircraftPortrait locale={locale} /></Reveal>
@@ -38,7 +41,7 @@ export default async function Fleet({ params }: { params: Promise<{ locale: stri
         <div className="wrap">
           {fleet.length === 0 && <p className="empty">{d.fleet.empty}</p>}
           <div className="fleetlist fleetlist--detail">
-            {fleet.map((aircraft, index) => {
+            {fleet.filter((aircraft) => !aircraft.placeholder).map((aircraft, index) => {
               const specs: [string, string][] = [];
               if (aircraft.seats) specs.push([d.fleet.seats, String(aircraft.seats)]);
               if (aircraft.rangeKm) specs.push([d.fleet.range, `${aircraft.rangeKm} km`]);
@@ -84,7 +87,7 @@ export default async function Fleet({ params }: { params: Promise<{ locale: stri
             })}
           </div>
 
-          <p className="note note--block"><Value>{d.placeholderNote}</Value></p>
+
         </div>
       </section>
 

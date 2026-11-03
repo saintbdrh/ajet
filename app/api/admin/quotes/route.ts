@@ -1,3 +1,4 @@
+import { serviceName, type ServiceId } from "@/lib/journey";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCloudflareEnv } from "@/lib/cloudflare";
@@ -16,7 +17,7 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("confirm"),
     id: z.string().trim().min(5).max(60),
-    aircraftId: z.string().trim().regex(/^[a-z0-9-]{2,80}$/),
+    aircraftId: z.string().trim().regex(/^[a-z0-9-]{2,80}$/).optional(),
     operationalApproval: z.literal(true),
     note: z.string().trim().min(10).max(500),
   }),
@@ -31,6 +32,7 @@ const quoteSchema = z.object({
 });
 
 type QuoteRow = {
+  service: ServiceId; extras: string[];
   id: string; locale: string; name: string; phone: string; email: string;
   organization: string; origin: string; destination: string; round_trip: number;
   flight_date: string; flight_time: string; passengers: number; notes: string;
@@ -88,7 +90,7 @@ export async function GET(request: Request) {
   const [quotes, revisions, history, aircraft, publishedPrices] = await Promise.all([
     db.prepare(
       `SELECT id, locale, name, phone, email, organization, origin, destination,
-        round_trip, flight_date, flight_time, passengers, notes, status,
+        round_trip, flight_date, flight_time, passengers, notes, service, extras, status,
         assigned_aircraft_id, operational_approved_by, operational_approved_at,
         created_at, updated_at
       FROM quotes ORDER BY created_at DESC LIMIT 250`,
@@ -162,10 +164,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "The quote expiry must be in the future." }, { status: 400 });
   }
   const quote = await db.prepare(
-    "SELECT id, locale, name, email, origin, destination, round_trip, flight_date, flight_time, passengers, status FROM quotes WHERE id = ?",
+    "SELECT id, locale, name, email, origin, destination, round_trip, flight_date, flight_time, passengers, service, status FROM quotes WHERE id = ?",
   ).bind(data.id).first<{
     id: string; locale: "mn" | "en"; name: string; email: string; origin: string; destination: string;
-    round_trip: number; flight_date: string; flight_time: string; passengers: number; status: string;
+    round_trip: number; flight_date: string; flight_time: string; passengers: number; service: ServiceId; status: string;
   }>();
   if (!quote) return NextResponse.json({ ok: false, error: "Quote request not found." }, { status: 404 });
   if (!quote.email) return NextResponse.json({ ok: false, error: "This client did not provide an email address." }, { status: 400 });
@@ -213,9 +215,10 @@ export async function POST(request: Request) {
     style: "currency",
     currency: data.currency,
   }).format(amountMinor / (10 ** digits));
+  const offeredService = serviceName(quote.locale, quote.service);
   const message = quote.locale === "mn"
-    ? `Сайн байна уу, ${quote.name}.\n\n${quote.origin} → ${quote.destination}${quote.round_trip ? " (буцах нислэгтэй)" : ""}\nОгноо: ${quote.flight_date}${quote.flight_time ? ` · ${quote.flight_time}` : ""}\nЗорчигч: ${quote.passengers}\nҮнийн санал: ${amount}\nХүчинтэй хугацаа: ${expiresAt.toISOString()}\n\nНөхцөл: ${data.terms}\n\nҮнийн саналыг зөвшөөрөх эсвэл татгалзах: ${decisionUrl}`
-    : `Hello ${quote.name},\n\n${quote.origin} → ${quote.destination}${quote.round_trip ? " (return)" : ""}\nDate: ${quote.flight_date}${quote.flight_time ? ` · ${quote.flight_time}` : ""}\nPassengers: ${quote.passengers}\nQuote: ${amount}\nValid until: ${expiresAt.toISOString()}\n\nTerms: ${data.terms}\n\nReview this quote and approve or decline: ${decisionUrl}\n\nClient approval does not confirm the flight; operations must still approve aircraft, crew and conditions.`;
+    ? `Сайн байна уу, ${quote.name}.\n\n${offeredService}\n${quote.origin} → ${quote.destination}${quote.round_trip ? " (буцах нислэгтэй)" : ""}\nОгноо: ${quote.flight_date}${quote.flight_time ? ` · ${quote.flight_time}` : ""}\n${quote.service === "charter" ? "Зорчигч" : "Зочин / оролцогч"}: ${quote.passengers}\nҮнийн санал: ${amount}\nХүчинтэй хугацаа: ${expiresAt.toISOString()}\n\nНөхцөл: ${data.terms}\n\nҮнийн саналыг зөвшөөрөх эсвэл татгалзах: ${decisionUrl}`
+    : `Hello ${quote.name},\n\n${offeredService}\n${quote.origin} → ${quote.destination}${quote.round_trip ? " (return)" : ""}\nDate: ${quote.flight_date}${quote.flight_time ? ` · ${quote.flight_time}` : ""}\n${quote.service === "charter" ? "Passengers" : "Guests / participants"}: ${quote.passengers}\nQuote: ${amount}\nValid until: ${expiresAt.toISOString()}\n\nTerms: ${data.terms}\n\nReview this quote and approve or decline: ${decisionUrl}\n\n${quote.service === "charter" ? "Client approval does not confirm the flight; operations must still approve aircraft, crew and conditions." : "Client approval does not confirm the booking; the service team must still confirm scope and availability."}`;
   let sent = false;
   try {
     const response = await fetch("https://api.resend.com/emails", {
@@ -224,7 +227,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         from,
         to: [quote.email],
-        subject: quote.locale === "mn" ? `Нислэгийн үнийн санал ${quote.id} · R${revision}` : `Flight quote ${quote.id} · R${revision}`,
+        subject: quote.locale === "mn" ? `Үйлчилгээний үнийн санал ${quote.id} · R${revision}` : `Service quote ${quote.id} · R${revision}`,
         text: message,
       }),
       signal: AbortSignal.timeout(8000),
@@ -282,10 +285,10 @@ export async function PATCH(request: Request) {
   if (!db) return NextResponse.json({ ok: false, error: "Database is unavailable." }, { status: 503 });
   const action = parsed.data;
   const quote = await db.prepare(
-    "SELECT id, status, passengers, locale, name, email, origin, destination, round_trip, flight_date, flight_time FROM quotes WHERE id = ?",
+    "SELECT id, status, passengers, locale, name, email, origin, destination, round_trip, flight_date, flight_time, service FROM quotes WHERE id = ?",
   ).bind(action.id).first<{
     id: string; status: string; passengers: number; locale: "mn" | "en"; name: string; email: string;
-    origin: string; destination: string; round_trip: number; flight_date: string; flight_time: string;
+    origin: string; destination: string; round_trip: number; flight_date: string; flight_time: string; service: ServiceId;
   }>();
   if (!quote) return NextResponse.json({ ok: false, error: "Quote request not found." }, { status: 404 });
 
@@ -296,16 +299,17 @@ export async function PATCH(request: Request) {
     nextStatus = "in_review";
   } else if (action.action === "confirm") {
     if (quote.status !== "approved") return NextResponse.json({ ok: false, error: "Only a client-approved quote can be confirmed." }, { status: 409 });
-    const aircraft = await db.prepare(
-      "SELECT id FROM aircraft WHERE id = ? AND is_published = 1 AND is_placeholder = 0 AND specifications_verified = 1 AND seats >= ?",
-    ).bind(action.aircraftId, quote.passengers).first<{ id: string }>();
-    if (!aircraft) {
-      return NextResponse.json({ ok: false, error: "Select an aircraft with verified specifications and sufficient seats." }, { status: 400 });
+    if (quote.service === "charter") {
+      if (!action.aircraftId) return NextResponse.json({ ok: false, error: "A verified aircraft is required for a flight." }, { status: 400 });
+      const aircraft = await db.prepare(
+        "SELECT id FROM aircraft WHERE id = ? AND is_published = 1 AND is_placeholder = 0 AND specifications_verified = 1 AND seats >= ?",
+      ).bind(action.aircraftId, quote.passengers).first<{ id: string }>();
+      if (!aircraft) return NextResponse.json({ ok: false, error: "Select an aircraft with verified specifications and sufficient seats." }, { status: 400 });
+      assignedAircraftId = action.aircraftId;
     }
     nextStatus = "confirmed";
-    assignedAircraftId = action.aircraftId;
   } else {
-    if (quote.status === "confirmed") return NextResponse.json({ ok: false, error: "A confirmed flight cannot be closed here." }, { status: 409 });
+    if (quote.status === "confirmed") return NextResponse.json({ ok: false, error: "A confirmed booking cannot be closed here." }, { status: 409 });
     nextStatus = "closed";
   }
   const note = action.note || (action.action === "review" ? "Dispatcher started review." : "");
@@ -342,12 +346,15 @@ export async function PATCH(request: Request) {
   if (action.action === "confirm") {
     const env = await getCloudflareEnv();
     const aircraftName = await dispatchAircraftName(assignedAircraftId, db);
-    const clientText = quote.locale === "mn"
+    const isFlight = quote.service === "charter";
+    const label = serviceName(quote.locale, quote.service);
+    const clientText = isFlight ? (quote.locale === "mn"
       ? `Сайн байна уу, ${quote.name}. ${quote.origin} → ${quote.destination} чиглэлийн ${quote.flight_date} өдрийн нислэгийг үйл ажиллагааны баг баталгаажууллаа. Нисэх цаг: ${quote.flight_time || "диспетчертэй тохиролцоно"}. Онгоц: ${aircraftName}.`
-      : `Hello ${quote.name}, your flight ${quote.origin} → ${quote.destination} on ${quote.flight_date} has been confirmed by operations. Departure time: ${quote.flight_time || "to be coordinated with dispatch"}. Assigned aircraft: ${aircraftName}.`;
+      : `Hello ${quote.name}, your flight ${quote.origin} → ${quote.destination} on ${quote.flight_date} has been confirmed by operations. Departure time: ${quote.flight_time || "to be coordinated with dispatch"}. Assigned aircraft: ${aircraftName}.`)
+      : (quote.locale === "mn" ? `Сайн байна уу, ${quote.name}. ${quote.flight_date} өдрийн ${label} үйлчилгээг баг баталгаажууллаа. Байршил: ${quote.origin}. Төслийн товч: ${quote.destination}. Дэлгэрэнгүйг хариуцсан багтай тохиролцоно уу.` : `Hello ${quote.name}, your ${label} service on ${quote.flight_date} has been confirmed. Location: ${quote.origin}. Brief: ${quote.destination}. Please coordinate the remaining details with our team.`);
     const clientEmail = await notifyClient(
       quote.email,
-      quote.locale === "mn" ? `Нислэг баталгаажлаа · ${quote.id}` : `Flight confirmed · ${quote.id}`,
+      quote.locale === "mn" ? `Захиалга баталгаажлаа · ${quote.id}` : `Booking confirmed · ${quote.id}`,
       clientText,
       env,
     );
@@ -358,7 +365,7 @@ export async function PATCH(request: Request) {
       if (!recorded.success) console.error(`[admin] Could not record confirmation email attempt for ${action.id}.`, recorded.error);
     }
     const opsOutcomes = await notifyOperations(
-      `Flight ${action.id} confirmed by ${authorization.email}. Aircraft: ${aircraftName}.`,
+      `${label} ${action.id} confirmed by ${authorization.email}.${isFlight ? ` Aircraft: ${aircraftName}.` : ""}`,
       env,
     );
     await recordNotificationOutcomes(db, action.id, "flight_confirmed", opsOutcomes);

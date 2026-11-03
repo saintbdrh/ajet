@@ -1,4 +1,5 @@
 "use client";
+import { serviceName } from "@/lib/journey";
 
 import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { previewQuotes } from "@/lib/admin-preview";
@@ -585,10 +586,10 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
   const visibleFields = cmsFields.filter((field) => matchesQuery([field.label, field.key, cmsFieldText(locale, field.key, field.label), cmsSectionText(locale, field.group)].join(" ")));
   const tabDescriptions: Record<Tab, string> = locale === "mn" ? {
     quotes: "Нислэгийн хүсэлт, үнийн санал, баталгаажуулалт.", content: "Вэбсайтын Монгол, Англи текстийг нэг дор засах.",
-    photos: "Вэбсайтын зураг болон харагдах хэсгийг удирдах.", prices: "Нийтлэх үнэ болон үнийн тайлбар.", aircraft: "Нисдэг тэрэгний мэдээлэл, зураг, нийтлэлт.", destinations: "Чиглэл, зураг, байршлын мэдээлэл.",
+    photos: "Вэбсайтын зураг болон харагдах хэсгийг удирдах.", prices: "Дотоод үнийн мэдээлэл. Нийтийн вэбсайтад үнэ харуулахгүй.", aircraft: "Нисдэг тэрэгний мэдээлэл, зураг, нийтлэлт.", destinations: "Чиглэл, зураг, байршлын мэдээлэл.",
   } : {
     quotes: "Every journey starts here. Review requests and manage proposals.", content: "Your website, in your words. Edit Mongolian and English together.",
-    photos: "Curate the imagery that tells your story.", prices: "Manage published starting prices and their terms.", aircraft: "Aircraft details, photography and publication controls.", destinations: "The places you fly. Manage imagery and destination details.",
+    photos: "Curate the imagery that tells your story.", prices: "Internal price references. Public catalogue pricing is currently withheld.", aircraft: "Aircraft details, photography and publication controls.", destinations: "The places you fly. Manage imagery and destination details.",
   };
   return (
     <div className="admin-shell admin-workspace">
@@ -597,6 +598,7 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
         <div className="admin-user">
           <span>{email}</span>
         <label className="admin-language"><span className="sr-only">{adminText(locale, "language")}</span><select aria-label={adminText(locale, "language")} value={locale} onChange={(event) => setLocale(event.target.value as Locale)}><option value="mn">МН</option><option value="en">EN</option></select></label>
+        {role === "owner" && <a href="/admin/careers">{locale === "mn" ? "Хүний нөөц" : "Recruitment"}</a>}
         <a href={logoutUrl}>{adminText(locale, "logout")}</a>
         </div>
       </header>
@@ -834,7 +836,7 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
                         <td><strong>{item.name}</strong><small>{item.created_at}</small>{item.notes && <p>{item.notes}</p>}</td>
                         <td>{item.origin} → {item.destination}<small>{item.flight_date}{item.flight_time && ` · ${item.flight_time}`}{item.round_trip ? ` · ${adminText(locale, "return")}` : ""}</small></td>
                         <td>{item.name}<small><a href={`tel:${item.phone}`}>{item.phone}</a></small>{item.email && <small><a href={`mailto:${item.email}`}>{item.email}</a></small>}</td>
-                        <td>{item.passengers}</td>
+                        <td><small>{serviceName(locale, item.service ?? "charter")}</small>{item.passengers}<small>{item.service === "charter" || !item.service ? (locale === "mn" ? "зорчигч" : "passengers") : (locale === "mn" ? "зочин / оролцогч" : "guests / participants")}</small></td>
                         <td>
                           <strong className={`request-status status-${item.status}`}>{adminStatusText(locale, item.status)}</strong>
                           {item.status === "requested" && <button type="button" className="admin-link" disabled={busy} onClick={() => void quoteAction({ action: "review", id: item.id })}>{adminText(locale, "startReview")}</button>}
@@ -845,20 +847,21 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
                           )}
                           {item.status === "approved" && (
                             <div className="admin-workflow-actions">
-                              <label>{adminText(locale, "assignAircraft")}
+                              {(!item.service || item.service === "charter") && <label>{adminText(locale, "assignAircraft")}
                                 <select value={confirm.aircraftId} onChange={(event) => setConfirmation((current) => ({ ...current, [item.id]: { ...confirm, aircraftId: event.target.value } }))}>
                                   <option value="">{adminText(locale, "selectVerifiedAircraft")}</option>
                                   {dispatchAircraft.filter((aircraftItem) => aircraftItem.seats !== null && aircraftItem.seats >= item.passengers).map((aircraftItem) =>
                                     <option value={aircraftItem.id} key={aircraftItem.id}>{aircraftItem.name} · {aircraftItem.seats} {adminText(locale, "seatsUnit")}</option>)}
                                 </select>
                               </label>
+                              }
                               <label>{adminText(locale, "operationalNote")}
                                 <textarea required minLength={10} maxLength={500} value={confirm.note} onChange={(event) => setConfirmation((current) => ({ ...current, [item.id]: { ...confirm, note: event.target.value } }))} />
                               </label>
                               <label className="admin-check"><input type="checkbox" checked={confirm.approved} onChange={(event) => setConfirmation((current) => ({ ...current, [item.id]: { ...confirm, approved: event.target.checked } }))} />
-                                {adminText(locale, "clientApproved")}
+                                {!item.service || item.service === "charter" ? adminText(locale, "clientApproved") : (locale === "mn" ? "Үйлчилгээний хүрээ, багийн боломжийг баталгаажууллаа." : "Service scope and team availability are confirmed.")}
                               </label>
-                              <button type="button" className="btn sm" disabled={busy || !confirm.aircraftId || !confirm.approved || confirm.note.trim().length < 10} onClick={() => void quoteAction({ action: "confirm", id: item.id, aircraftId: confirm.aircraftId, operationalApproval: true, note: confirm.note })}>{adminText(locale, "confirmFlight")}</button>
+                              <button type="button" className="btn sm" disabled={busy || ((!item.service || item.service === "charter") && !confirm.aircraftId) || !confirm.approved || confirm.note.trim().length < 10} onClick={() => void quoteAction({ action: "confirm", id: item.id, aircraftId: (!item.service || item.service === "charter") ? confirm.aircraftId : undefined, operationalApproval: true, note: confirm.note })}>{!item.service || item.service === "charter" ? adminText(locale, "confirmFlight") : (locale === "mn" ? "Үйлчилгээ баталгаажуулах" : "Confirm service")}</button>
                             </div>
                           )}
                           {item.status === "confirmed" && <small>{adminText(locale, "operationallyApproved")} {item.operational_approved_by ?? adminText(locale, "dispatcher")}{item.assigned_aircraft_id ? ` · ${dispatchAircraft.find((entry) => entry.id === item.assigned_aircraft_id)?.name ?? ""}` : ""}</small>}

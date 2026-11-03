@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { experienceCopy } from "@/lib/experiences";
 import type { Dict, Locale } from "@/lib/i18n";
 
 export default function SiteFooter({
@@ -20,12 +21,11 @@ export default function SiteFooter({
         <div className="foot__top">
           <div className="foot__brand">
             <Link href={`/${locale}`} className="foot__wordmark">
-              <span className="hdr__mark" aria-hidden="true" />
-              {brand}
+              <img className="brand-logo" src="/img/brand/ajet-logo.svg" width="170" height="51" alt={brand} />
             </Link>
             <p>{d.foot.tagline}</p>
             <ul className="foot__creds">
-              {d.credentials.items.map((item) => <li key={item}>{item}</li>)}
+              {d.credentials.items.filter((item) => !item.includes("[")).map((item) => <li key={item}>{item}</li>)}
             </ul>
           </div>
 
@@ -44,6 +44,9 @@ export default function SiteFooter({
           <nav className="foot__col" aria-label={d.foot.company}>
             <h4>{d.foot.company}</h4>
             <ul>
+              <li><Link href={`/${locale}/airport-express`}>{experienceCopy[locale].express}</Link></li>
+              <li><Link href={`/${locale}/lounges`}>{experienceCopy[locale].lounges}</Link></li>
+              <li><Link href={`/${locale}/careers`}>{experienceCopy[locale].careers}</Link></li>
               <li><Link href={`/${locale}/quote`}>{d.nav.quote}</Link></li>
               <li><a href={`/${locale}#safety`}>{d.nav.safety}</a></li>
               <li><a href={`/${locale}#about`}>{d.nav.about}</a></li>
@@ -68,12 +71,7 @@ export default function SiteFooter({
         </div>
 
         <p className="foot__note">{d.foot.note}</p>
-        <p className="foot__note foot__note--credit">
-          {locale === "mn" ? "Бусад зургийн эх сурвалж:" : "Additional photography:"}{" "}
-          <a href="https://commons.wikimedia.org/wiki/File:Tengboche,_Helicopter_in_flight,_Mountains_of_Nepal.jpg" target="_blank" rel="noreferrer">
-            Vyacheslav Argenberg · CC BY 4.0
-          </a>
-        </p>
+
       </div>
     </footer>
   );

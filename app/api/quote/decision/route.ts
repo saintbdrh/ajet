@@ -14,6 +14,7 @@ const actionSchema = z.object({
 const privateHeaders = { "Cache-Control": "private, no-store, max-age=0", "Referrer-Policy": "no-referrer" };
 
 type QuoteDecisionRow = {
+  service: "charter" | "catering" | "photography";
   revision_id: string; quote_id: string; revision: number; amount_minor: number; currency: string;
   terms: string; expires_at: string; revision_status: string; locale: "mn" | "en";
   origin: string; destination: string; round_trip: number; flight_date: string; flight_time: string;
@@ -34,7 +35,7 @@ async function findRevision(token: string) {
   const row = await db.prepare(
     `SELECT r.id AS revision_id, r.quote_id, r.revision, r.amount_minor, r.currency,
       r.terms, r.expires_at, r.status AS revision_status, q.locale, q.origin, q.destination,
-      q.round_trip, q.flight_date, q.flight_time, q.passengers, q.status AS quote_status
+      q.round_trip, q.flight_date, q.flight_time, q.passengers, q.service, q.status AS quote_status
      FROM quote_revisions r JOIN quotes q ON q.id = r.quote_id
      WHERE r.approval_token_hash = ?`,
   ).bind(await hashToken(token)).first<QuoteDecisionRow>();
@@ -59,6 +60,7 @@ function quoteResponse(row: QuoteDecisionRow) {
     ok: true,
     quote: {
       id: row.quote_id,
+      service: row.service,
       locale: row.locale,
       origin: row.origin,
       destination: row.destination,

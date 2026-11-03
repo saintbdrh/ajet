@@ -7,6 +7,16 @@ import "@fontsource/noto-sans/cyrillic-600.css";
 import type { ReactNode } from "react";
 import "../globals.css";
 import "../site.css";
+import "../brand.css";
+import "../experience.css";
+import "../journey.css";
+import "../immersive-hero.css";
+import "@fontsource/manrope/latin-400.css";
+import "@fontsource/manrope/latin-600.css";
+import "@fontsource/manrope/latin-800.css";
+import "@fontsource/manrope/cyrillic-400.css";
+import "@fontsource/manrope/cyrillic-600.css";
+import "@fontsource/manrope/cyrillic-800.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ScrollMotion from "@/components/ScrollMotion";
@@ -61,7 +71,8 @@ export default async function RootLayout({ children, params }: { children: React
             quote: d.nav.quote,
           }}
         />
-        <main>{children}</main>
+        <a className="skip-link" href="#main-content">{locale === "mn" ? "Үндсэн агуулга руу" : "Skip to content"}</a>
+        <main id="main-content">{children}</main>
         <SiteFooter locale={locale} brand={BRAND} d={d} phone={phone} email={email} />
       </body>
     </html>

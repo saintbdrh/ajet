@@ -1,124 +1,94 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import type { Locale } from "@/lib/i18n";
 
-type ModelElement = HTMLElement & {
-  cameraOrbit: string;
-  getCameraOrbit: () => { theta: number; phi: number; radius: number };
-};
-const initialOrbit = "140deg 72deg 70%";
+import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import type { Locale } from "@/lib/i18n";
+import type { StudioControls } from "@/components/StudioCanvas";
+
+const StudioCanvas = dynamic(() => import("@/components/StudioCanvas"), { ssr: false });
 const views = [
-  { id: "side", en: "Profile", mn: "Хажуу талаас", image: "side", orbit: "90deg 78deg 75%" },
-  { id: "front", en: "Front", mn: "Урд талаас", image: "front", orbit: "180deg 78deg 75%" },
-  { id: "rear", en: "Rear", mn: "Ард талаас", image: "rear", orbit: "0deg 78deg 75%" },
+  { en: "Profile", mn: "Хажуу", angle: -Math.PI / 2 },
+  { en: "Front", mn: "Урд", angle: Math.PI },
+  { en: "Rear", mn: "Ард", angle: 0 },
 ] as const;
 
-let viewerReady: Promise<void> | undefined;
-function loadViewer() {
-  if (customElements.get("model-viewer")) return Promise.resolve();
-  if (!viewerReady) viewerReady = new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.type = "module";
-    script.src = "/vendor/model-viewer-4.4.0.min.js";
-    script.onload = () => { void customElements.whenDefined("model-viewer").then(() => resolve()); };
-    script.onerror = () => { script.remove(); viewerReady = undefined; reject(new Error("Viewer could not load")); };
-    document.head.appendChild(script);
-  });
-  return viewerReady;
-}
-
 export default function AircraftPortrait({ locale }: { locale: Locale }) {
-  const [view, setView] = useState(0);
-  const [interactive, setInteractive] = useState(false);
+  const mn = locale === "mn";
+  const [active, setActive] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [preset, setPreset] = useState<number | null>(null);
-  const [announcement, setAnnouncement] = useState("");
-  const host = useRef<HTMLDivElement>(null);
-  const model = useRef<ModelElement | null>(null);
-  const mn = locale === "mn";
+  const [film, setFilm] = useState(false);
+  const [filmPlaying, setFilmPlaying] = useState(false);
+  const wrapper = useRef<HTMLDivElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const controls = useRef<StudioControls | null>(null);
+  const ready = useCallback(() => { setLoaded(true); setFailed(false); }, []);
+  const error = useCallback(() => { setFailed(true); setActive(false); setLoaded(false); }, []);
+  const interact = useCallback(() => { setPlaying(false); setPreset(null); }, []);
 
   useEffect(() => {
-    if (!interactive) return;
-    let cancelled = false;
-    let element: ModelElement | undefined;
-    const timeout = window.setTimeout(() => {
-      if (!cancelled) { setFailed(true); setInteractive(false); }
-    }, 30000);
-    setLoaded(false);
-    setFailed(false);
-    setPreset(null);
-    void loadViewer().then(() => {
-      if (cancelled || !host.current) return;
-      const Viewer = customElements.get("model-viewer") as CustomElementConstructor & { dracoDecoderLocation: string };
-      Viewer.dracoDecoderLocation = "/vendor/draco/";
-      element = document.createElement("model-viewer") as ModelElement;
-      const attributes = {
-        src: "/models/ajet-ec145.glb",
-        alt: mn ? "Ajet EC145 нисдэг тэрэгний интерактив 3D загвар" : "Interactive 3D model of the Ajet EC145 helicopter",
-        "camera-controls": "", "disable-pan": "", "disable-tap": "",
-        "touch-action": "pan-y", "interaction-prompt": "none",
-        "camera-orbit": initialOrbit, "min-camera-orbit": "auto 15deg 40%",
-        "max-camera-orbit": "auto 95deg 180%", "environment-image": "neutral",
-        "shadow-intensity": "0.6", "shadow-softness": "0.8", exposure: "1.1",
-        "interpolation-decay": window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "0" : "120",
-        loading: "eager", reveal: "auto",
-      };
-      Object.entries(attributes).forEach(([key, value]) => element!.setAttribute(key, value));
-      element.addEventListener("load", () => { window.clearTimeout(timeout); if (!cancelled) setLoaded(true); });
-      element.addEventListener("error", () => {
-        if (!cancelled) { setFailed(true); setInteractive(false); }
-      });
-      element.addEventListener("camera-change", (event) => {
-        if ((event as CustomEvent<{ source: string }>).detail?.source === "user-interaction") setPreset(null);
-      });
-      model.current = element;
-      host.current.appendChild(element);
-    }).catch(() => {
-      if (!cancelled) { setFailed(true); setInteractive(false); }
-    });
-    return () => { cancelled = true; window.clearTimeout(timeout); element?.remove(); model.current = null; };
-  }, [interactive, mn]);
+    if (!wrapper.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setActive(true); observer.disconnect(); }
+    }, { rootMargin: "150px" });
+    observer.observe(wrapper.current);
+    setPlaying(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const changed = () => setFullscreen(document.fullscreenElement === wrapper.current);
+    document.addEventListener("fullscreenchange", changed);
+    return () => { observer.disconnect(); document.removeEventListener("fullscreenchange", changed); };
+  }, []);
 
-  function selectView(index: number) {
-    setView(index);
-    if (interactive && model.current) { model.current.cameraOrbit = views[index].orbit; setPreset(index); }
+  useEffect(() => {
+    if (!active || loaded) return;
+    const timer = window.setTimeout(error, 45000);
+    return () => window.clearTimeout(timer);
+  }, [active, loaded, error]);
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await wrapper.current?.requestFullscreen();
+    } catch { /* Fullscreen may be unavailable on a mobile browser; the full model remains in frame. */ }
   }
-  function zoom(scale: number) {
-    const element = model.current;
-    if (!element || !loaded) return;
-    const { theta, phi, radius } = element.getCameraOrbit();
-    element.cameraOrbit = `${theta}rad ${phi}rad ${radius * scale}m`;
+  function toggleFilm() {
+    setFilm((current) => !current); setPlaying(false);
+    if (film) { video.current?.pause(); setFilmPlaying(false); }
   }
-  function reset() {
-    if (model.current) model.current.cameraOrbit = initialOrbit;
-    setPreset(null);
-    setAnnouncement(mn ? "Анхны байрлалд буцаалаа" : "View reset");
+  function togglePlayback() {
+    if (!film) { setPlaying((current) => !current); return; }
+    if (!video.current) return;
+    if (filmPlaying) video.current.pause();
+    else void video.current.play().catch(() => setFilmPlaying(false));
   }
 
-  return <div id="aircraft-viewer" className={`aircraft-portrait${interactive ? " is-interactive" : ""}`}>
-    <div className="portrait-meta"><span>AJET / EC145</span><span>{mn ? "360° · ИНТЕРАКТИВ 3D" : "360° · INTERACTIVE 3D"}</span></div>
-    <div className="portrait-image">
-      <img src={`/img/ajet-aircraft-${views[view].image}.png`} alt={`${mn ? "Ajet EC145 нисдэг тэрэг" : "Ajet EC145 helicopter"} — ${views[view][locale]}`} loading="lazy" hidden={interactive && loaded} />
-      <div className={`portrait-model${loaded ? " is-loaded" : ""}`} ref={host} aria-hidden={!interactive} />
-      {(!interactive || !loaded) && <div className="portrait-load-panel">
-        {interactive ? <span className="portrait-loading" role="status">{mn ? "3D загвар ачаалж байна…" : "Preparing your aircraft…"}</span> : <>
-          {failed && <p role="status">{mn ? "3D загварыг ачаалж чадсангүй. Дахин оролдоно уу эсвэл зургуудыг үзээрэй." : "The 3D view could not load. Try again or explore the photos."}</p>}
-          <button className="btn" type="button" onClick={() => { setFailed(false); setAnnouncement(""); setInteractive(true); }}><span aria-hidden="true">↻</span> {failed ? (mn ? "Дахин оролдох" : "Try 3D again") : (mn ? "3D загварыг үзэх" : "Explore in 3D")}</button>
-          <span>{mn ? "Эргүүлэх · Томруулах" : "Orbit. Zoom. Explore."}</span>
-        </>}
-      </div>}
-      {interactive && loaded && <div className="portrait-tools" role="group" aria-label={mn ? "3D удирдлага" : "3D controls"}>
-        <button type="button" aria-label={mn ? "Томруулах" : "Zoom in"} onClick={() => zoom(0.8)}>＋</button>
-        <button type="button" aria-label={mn ? "Жижигрүүлэх" : "Zoom out"} onClick={() => zoom(1.25)}>−</button>
-        <button type="button" aria-label={mn ? "Анхны байрлал" : "Reset view"} onClick={reset}>↺</button>
-      </div>}
+  return <div id="aircraft-viewer" className="aircraft-portrait studio-viewer" ref={wrapper}>
+    <div className="portrait-meta"><span>A-JET / EC145</span><span>{mn ? "СТУДИ · 360°" : "THE STUDIO · 360°"}</span></div>
+    <div className="studio-stage" aria-busy={active && !loaded && !film}>
+      <img className="studio-poster" src="/img/ajet-studio-poster.webp" width="1600" height="900" alt={mn ? "EC145 нисдэг тэрэг харанхуй студийн гэрэлд" : "The EC145 in a dark studio with a reflective floor"} hidden={loaded && !film} />
+      {active && !failed && <div className="studio-live" style={{ opacity: loaded ? 1 : 0 }} hidden={film}><StudioCanvas locale={locale} playing={playing && !film} controls={controls} onReady={ready} onError={error} onInteract={interact} /></div>}
+      {film && <video ref={video} className="studio-film" poster="/img/ajet-studio-poster.webp" loop muted playsInline preload="none" onPlay={() => setFilmPlaying(true)} onPause={() => setFilmPlaying(false)} controls>
+        <source src="/films/ajet-studio.mp4" type="video/mp4" />
+      </video>}
+      {active && !loaded && !failed && !film && <p className="studio-loading" role="status">{mn ? "Студи ачаалж байна…" : "Preparing the studio…"}</p>}
     </div>
-    <div className="portrait-bottom">
-      <span>{interactive ? "360°" : `${String(view + 1).padStart(2, "0")} / 03`}</span>
-      <div className="portrait-views" role="group" aria-label={mn ? "Харах өнцөг" : "Aircraft view"}>{views.map((item, index) => <button type="button" key={item.id} disabled={interactive && !loaded} aria-pressed={interactive ? preset === index : view === index} onClick={() => selectView(index)}>{item[locale]}</button>)}</div>
-      {interactive ? <button className="portrait-stills" type="button" onClick={() => { setInteractive(false); setLoaded(false); }}>{mn ? "Зургууд" : "Photos"}</button> : <span className="portrait-cross" aria-hidden="true">＋</span>}
+    <div className="studio-controls">
+      <div className="studio-views" role="group" aria-label={mn ? "Харах өнцөг" : "Aircraft views"}>
+        {views.map((view, index) => <button key={view.en} type="button" disabled={!loaded || film} aria-pressed={preset === index} onClick={() => { setPlaying(false); setPreset(index); controls.current?.view(view.angle); }}>{view[locale]}</button>)}
+      </div>
+      <div className="studio-tools" role="group" aria-label={mn ? "Студийн удирдлага" : "Studio controls"}>
+        <button type="button" onClick={togglePlayback} disabled={!film && !loaded} aria-pressed={film ? filmPlaying : playing}>{(film ? filmPlaying : playing) ? (mn ? "Түр зогсоох" : "Pause motion") : (mn ? "Хөдөлгөх" : "Play motion")}</button>
+        <button type="button" disabled={!loaded || film} aria-label={mn ? "Томруулах" : "Zoom in"} onClick={() => { setPlaying(false); controls.current?.zoom(.85); }}>＋</button>
+        <button type="button" disabled={!loaded || film} aria-label={mn ? "Жижигрүүлэх" : "Zoom out"} onClick={() => { setPlaying(false); controls.current?.zoom(1.18); }}>−</button>
+        <button type="button" disabled={!loaded || film} onClick={() => { setPlaying(false); setPreset(null); controls.current?.reset(); }}>{mn ? "Бүтнээр харах" : "Fit aircraft"}</button>
+        <button type="button" onClick={toggleFullscreen}>{fullscreen ? (mn ? "Жижгэрүүлэх" : "Exit fullscreen") : (mn ? "Бүтэн дэлгэц" : "Fullscreen")}</button>
+      </div>
     </div>
-    <p className="portrait-guidance" role="status">{interactive && loaded ? (mn ? "Чирж эргүүлнэ · Гүйлгэж эсвэл хоёр хуруугаар томруулна · Сумтай товчоор эргүүлнэ" : "Drag to rotate · Scroll or pinch to zoom · Arrow keys to orbit") : (mn ? "Таны хяналтад. Өнцөг бүрээс хараарай." : "Every angle. At your own pace.")}<span className="sr-only">{announcement}</span></p>
+    <div className="studio-caption">
+      <p role="status">{failed ? (mn ? "3D ачаалагдсангүй. Студийн бичлэгийг үзээрэй эсвэл дахин оролдоорой." : "The 3D view could not load. Watch the studio film or retry.") : (mn ? "Чирж эргүүлнэ · Сумтай товчоор өнцөг солино · 30 секундийн удаан хөдөлгөөн" : "Drag to orbit · Arrow keys to explore · A slow 30-second studio sweep")}</p>
+      <div>{failed && <button type="button" onClick={() => { setFailed(false); setActive(true); }}>{mn ? "Дахин оролдох" : "Retry 3D"}</button>}<button type="button" aria-pressed={film} onClick={toggleFilm}>{film ? (mn ? "3D рүү буцах" : "Back to 3D") : (mn ? "Студийн бичлэг ↗" : "Watch the studio film ↗")}</button></div>
+    </div>
   </div>;
 }

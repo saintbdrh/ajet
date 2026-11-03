@@ -1,0 +1,30 @@
+/* Full-screen A-JET film, with content in the lower foreground. */
+.site .immersive-hero { min-height: max(760px, 100svh); padding-top: 0; justify-content: flex-end; background: #020405; }
+.site .immersive-hero__media { position: absolute; inset: 0; }
+.site .immersive-hero__media > video, .site .immersive-hero__media > img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.site .immersive-hero__veil { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, #02060966, transparent 26%, transparent 43%, #020609cc 83%, #020609eb), linear-gradient(90deg, #02060955, transparent 70%); }
+.site .immersive-hero .hero__inner { position: relative; z-index: 2; display: block; padding-block: 15rem 2.5rem; pointer-events: none; }
+.site .immersive-hero .brand-hero__copy { max-width: 720px; }
+.site .immersive-hero .brand-hero__copy a { pointer-events: auto; }
+.site .immersive-hero h1 { font-size: clamp(2.8rem, 4.8vw, 5.2rem); max-width: 16ch; text-transform: none; margin-bottom: 1rem; }
+.site .immersive-hero .hero__sub { max-width: 48ch; color: #e1e6e9; font-size: .95rem; }
+.site .immersive-hero .hero__actions { margin-top: 1.5rem; }
+.site .immersive-hero .brand-hero__bottom { position: relative; z-index: 2; width: calc(100% - var(--gutter) * 2); margin-inline: auto; padding-block: 1rem; }
+.site .immersive-hero .hero-film-control { inset: auto var(--gutter) 7rem auto; z-index: 4; background: #02060988; backdrop-filter: blur(12px); }
+@media (max-width: 760px) {
+  .site .immersive-hero { min-height: max(800px, 100svh); }
+  .site .immersive-hero__media > video, .site .immersive-hero__media > img { object-fit: contain; object-position: center 25%; transform: scale(1.2); transform-origin: center 25%; }
+  .site .immersive-hero__veil { background: linear-gradient(180deg, #02060944, transparent 20%, transparent 40%, #020405cc 57%, #020405 85%); }
+  .site .immersive-hero .hero__inner { padding-block: 23rem 1.5rem; }
+  .site .immersive-hero h1 { font-size: clamp(2.25rem, 8.7vw, 3.5rem); max-width: 17ch; }
+  .site .immersive-hero .eyebrow { max-width: 32ch; font-size: .58rem; }
+  .site .immersive-hero .hero__sub { font-size: .85rem; line-height: 1.65; max-width: 43ch; }
+  .site .immersive-hero .hero__actions { gap: .6rem 1rem; margin-top: 1.25rem; }
+  .site .immersive-hero .hero__actions .btn { padding-inline: 1.25rem; min-height: 48px; }
+  .site .immersive-hero .hero-film-control { inset: 6.5rem var(--gutter) auto auto; font-size: .6rem; }
+  .site .immersive-hero .brand-hero__bottom { gap: .75rem; font-size: .52rem; }
+  .site .immersive-hero .brand-hero__bottom > span:first-child { max-width: 23ch; }
+}
+@media (max-height: 600px) and (min-width: 761px) {
+  .site .immersive-hero { min-height: 680px; }
+}

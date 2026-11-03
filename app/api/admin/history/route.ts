@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDatabase, type Statement } from "@/lib/db";
 import { isAdminResponse, requireAdmin } from "@/lib/admin-api";
-import { defaultMediaSlots } from "@/lib/content";
+import { defaultMediaSlots } from "@/lib/media";
 
 export const runtime = "nodejs";
 

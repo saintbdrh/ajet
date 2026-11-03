@@ -37,6 +37,10 @@
   ],
   "exclude": [
     "node_modules",
-    "sanity"
+    "sanity",
+    "**/page_BASE_*.tsx",
+    "**/page_BACKUP_*.tsx",
+    "**/page_LOCAL_*.tsx",
+    "**/page_REMOTE_*.tsx"
   ]
 }

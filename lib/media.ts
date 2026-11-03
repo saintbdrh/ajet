@@ -14,7 +14,7 @@ export const MAX_VIDEO_SECONDS = 60;
 
 /** Uploaded object keys look like uploads/<uuid>.<ext>; built-in fallbacks are /img/<file> in public/. */
 export const UPLOAD_KEY_PATTERN = /^uploads\/[a-f0-9-]{36}\.(jpg|png|webp|mp4|webm)$/;
-export const STATIC_IMAGE_PATTERN = /^\/img\/[a-zA-Z0-9._-]+$/;
+export const STATIC_IMAGE_PATTERN = /^\/img\/(?:(?:brand|ajet)\/)?[a-zA-Z0-9._-]+$/;
 
 export function isVideoKey(key: string | null | undefined): boolean {
   return Boolean(key && /\.(mp4|webm)$/.test(key));
@@ -51,23 +51,20 @@ export type MediaSlot = {
   creditUrl: string;
 };
 
-const heroCredit = {
-  creditText: "Vyacheslav Argenberg · CC BY 4.0",
-  creditUrl: "https://commons.wikimedia.org/wiki/File:Tengboche,_Helicopter_in_flight,_Mountains_of_Nepal.jpg",
-};
+const heroCredit = { creditText: "", creditUrl: "" };
 const noCredit = { creditText: "", creditUrl: "" };
 
 export const defaultMediaSlots: MediaSlot[] = [
-  { key: "hero", imageKey: "/img/hero.jpg", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" }, ...heroCredit },
-  { key: "membership", imageKey: "/img/lake.jpg", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" }, ...noCredit },
-  { key: "corporate", imageKey: "/img/mountains.jpg", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Уулсын оргил", en: "Mountain peaks" }, ...noCredit },
-  { key: "journey-01", imageKey: "/img/lake.jpg", posterKey: null, focalX: 50, focalY: 52, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" }, ...noCredit },
-  { key: "journey-02", imageKey: "/img/hero.jpg", posterKey: null, focalX: 58, focalY: 50, alt: { mn: "Нисдэг тэрэгний бүхээг", en: "A helicopter in flight" }, ...heroCredit },
-  { key: "journey-03", imageKey: "/img/hero.jpg", posterKey: null, focalX: 65, focalY: 50, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" }, ...heroCredit },
-  { key: "journey-04", imageKey: "/img/mountains.jpg", posterKey: null, focalX: 50, focalY: 48, alt: { mn: "Уулсын оргил", en: "Mountain peaks" }, ...noCredit },
-  { key: "journey-05", imageKey: "/img/lake.jpg", posterKey: null, focalX: 50, focalY: 44, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" }, ...noCredit },
-  { key: "journey-06", imageKey: "/img/mountains.jpg", posterKey: null, focalX: 50, focalY: 57, alt: { mn: "Уулсын дээгүүрх нислэг", en: "A flight above mountain peaks" }, ...noCredit },
-  { key: "journey-07", imageKey: "/img/hero.jpg", posterKey: null, focalX: 50, focalY: 54, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" }, ...heroCredit },
+  { key: "hero", imageKey: "/img/brand/window-view.webp", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" }, ...heroCredit },
+  { key: "membership", imageKey: "/img/brand/window-view.webp", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" }, ...noCredit },
+  { key: "corporate", imageKey: "/img/ajet/ec145-cabin.webp", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "A-JET EC145-ийн бодит зорчигчийн бүхээг", en: "Actual A-JET EC145 passenger cabin" }, ...noCredit },
+  { key: "journey-01", imageKey: "/img/ajet/ec145-rooftop.webp", posterKey: null, focalX: 50, focalY: 52, alt: { mn: "Дээврийн талбайд зогссон A-JET EC145", en: "A-JET EC145 parked on a rooftop helipad" }, ...noCredit },
+  { key: "journey-02", imageKey: "/img/ajet/studio-detail.webp", posterKey: null, focalX: 58, focalY: 50, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" }, ...heroCredit },
+  { key: "journey-03", imageKey: "/img/ajet/ec145-cabin.webp", posterKey: null, focalX: 65, focalY: 50, alt: { mn: "A-JET EC145-ийн бодит зорчигчийн бүхээг", en: "Actual A-JET EC145 passenger cabin" }, ...heroCredit },
+  { key: "journey-04", imageKey: "/img/brand/mountain-view.webp", posterKey: null, focalX: 50, focalY: 48, alt: { mn: "Уулсын оргил", en: "Mountain peaks" }, ...noCredit },
+  { key: "journey-05", imageKey: "/img/brand/window-view.webp", posterKey: null, focalX: 50, focalY: 44, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" }, ...noCredit },
+  { key: "journey-06", imageKey: "/img/brand/mountain-view.webp", posterKey: null, focalX: 50, focalY: 57, alt: { mn: "Уулсын дээгүүрх нислэг", en: "A flight above mountain peaks" }, ...noCredit },
+  { key: "journey-07", imageKey: "/img/brand/window-view.webp", posterKey: null, focalX: 50, focalY: 54, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" }, ...heroCredit },
 ];
 
 /** A still image for places that cannot play video (cards, fallbacks): the poster for videos, the image otherwise. */

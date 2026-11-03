@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { extraIds, journeyCopy, serviceIds, serviceName } from "@/lib/journey";
 import { getCloudflareEnv } from "@/lib/cloudflare";
 import { getDatabase, type Database } from "@/lib/db";
 
@@ -9,6 +10,8 @@ const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ula
 const schema = z.object({
   idempotencyKey: z.string().uuid(),
   locale: z.enum(["mn", "en"]),
+  service: z.enum(serviceIds).default("charter"),
+  extras: z.array(z.enum(extraIds)).max(3).default([]).transform((items) => [...new Set(items)].sort()),
   name: z.string().trim().min(2).max(80),
   phone: z.string().trim().regex(/^[0-9+()\-\s]{6,30}$/),
   email: z.union([z.literal(""), z.string().trim().email().max(120)]).optional(),
@@ -21,13 +24,13 @@ const schema = z.object({
     return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value && value >= today();
   }),
   time: z.union([z.literal(""), z.string().regex(/^\d{2}:\d{2}$/)]).optional(),
-  pax: z.coerce.number().int().min(1).max(20),
+  pax: z.coerce.number().int().min(1).max(500),
   notes: z.string().trim().max(1000).optional(),
   token: z.string().max(2048).optional(),
-}).refine((data) => data.from.toLocaleLowerCase() !== data.to.toLocaleLowerCase(), {
+}).refine((data) => data.service !== "charter" || data.pax <= 20, { path: ["pax"], message: "Please discuss larger flight groups with operations." }).refine((data) => data.service !== "charter" || data.from.toLocaleLowerCase() !== data.to.toLocaleLowerCase(), {
   path: ["to"],
   message: "Departure and destination must be different.",
-});
+}).transform((data) => ({ ...data, extras: data.extras.filter((id) => id !== data.service), roundTrip: data.service === "charter" ? data.roundTrip : false }));
 
 const hits = new Map<string, number[]>();
 function limited(ip: string) {
@@ -146,10 +149,13 @@ export async function POST(request: Request) {
   }
 
   const d = parsed.data;
+  const serviceDescription = serviceName(d.locale, d.service);
+  const extraDescription = d.extras.filter((id) => id !== d.service).map((id) => journeyCopy[d.locale][id]).join(", ");
+  const combinedNote = [`Service: ${serviceDescription}`, extraDescription && `Additional services: ${extraDescription}`, d.notes ?? ""].filter(Boolean).join("\n");
   const requestHash = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(JSON.stringify({
-      locale: d.locale, name: d.name, phone: d.phone, email: d.email ?? "", org: d.org ?? "",
+      locale: d.locale, service: d.service, extras: d.extras, name: d.name, phone: d.phone, email: d.email ?? "", org: d.org ?? "",
       from: d.from, to: d.to, roundTrip: d.roundTrip ?? false, date: d.date,
       time: d.time ?? "", pax: d.pax, notes: d.notes ?? "",
     })),
@@ -166,17 +172,17 @@ export async function POST(request: Request) {
     quoteId = existing.id;
   } else {
     quoteId = `Q-${d.date.replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
-    const note = d.notes ?? "";
+    const note = combinedNote;
     try {
       await db.batch([
         db.prepare(
           `INSERT INTO quotes (
             id, idempotency_key, request_hash, locale, name, phone, email, organization,
-            origin, destination, round_trip, flight_date, flight_time, passengers, notes
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            origin, destination, round_trip, flight_date, flight_time, passengers, notes, service, extras
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)`,
         ).bind(
           quoteId, d.idempotencyKey, requestHash, d.locale, d.name, d.phone, d.email ?? "",
-          d.org ?? "", d.from, d.to, d.roundTrip ? 1 : 0, d.date, d.time ?? "", d.pax, note,
+          d.org ?? "", d.from, d.to, d.roundTrip ? 1 : 0, d.date, d.time ?? "", d.pax, note, d.service, JSON.stringify(d.extras),
         ),
         db.prepare(
           "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) VALUES (?, NULL, 'requested', 'client', 'Request received.')",
@@ -200,9 +206,9 @@ export async function POST(request: Request) {
   ).bind(quoteId).all<{ channel: "telegram" | "email" }>();
   const deliveredChannels = new Set(alreadyDelivered.results.map((row) => row.channel));
   const text = [
-    `Flight request ${quoteId}`, `Name: ${d.name}`, `Phone: ${d.phone}`, d.email && `Email: ${d.email}`,
-    d.org && `Organization: ${d.org}`, `Route: ${d.from} -> ${d.to}${d.roundTrip ? " (round trip)" : ""}`,
-    `Date: ${d.date}${d.time ? ` ${d.time}` : ""}`, `Passengers: ${d.pax}`, d.notes && `Notes: ${d.notes}`,
+    `Service request ${quoteId}`, `Name: ${d.name}`, `Phone: ${d.phone}`, d.email && `Email: ${d.email}`,
+    d.org && `Organization: ${d.org}`, `${d.service === "charter" ? "Route" : "Location / brief"}: ${d.from} -> ${d.to}${d.service === "charter" && d.roundTrip ? " (round trip)" : ""}`,
+    `Date: ${d.date}${d.time ? ` ${d.time}` : ""}`, `${d.service === "charter" ? "Passengers" : "Guests / participants"}: ${d.pax}`, `Notes: ${combinedNote}`,
     `Language: ${d.locale}`,
   ].filter(Boolean).join("\n");
 
@@ -223,7 +229,7 @@ export async function POST(request: Request) {
   }
   if (!deliveredChannels.has("email")) {
     const recipients = (env?.QUOTE_TO_EMAIL ?? process.env.QUOTE_TO_EMAIL ?? "")
-      .split(",").map((recipient) => recipient.trim()).filter(Boolean);
+      .split(",").map((recipient: string) => recipient.trim()).filter(Boolean);
     const mailConfigured = Boolean(
       (env?.RESEND_API_KEY ?? process.env.RESEND_API_KEY) &&
       (env?.QUOTE_FROM_EMAIL ?? process.env.QUOTE_FROM_EMAIL) && recipients.length > 0,
@@ -231,7 +237,7 @@ export async function POST(request: Request) {
     configured ||= mailConfigured;
     if (mailConfigured) {
       const result = await sendEmail(
-        `Flight request ${quoteId}`,
+        `Service request ${quoteId}`,
         text,
         recipients,
         env,

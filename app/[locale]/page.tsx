@@ -1,74 +1,98 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import StudioHero from "@/components/StudioHero";
+import CabinExperience from "@/components/CabinExperience";
+import GroundCare from "@/components/GroundCare";
+import ServiceCollection from "@/components/ServiceCollection";
 import AircraftPortrait from "@/components/AircraftPortrait";
 import Reveal from "@/components/Reveal";
 import Value from "@/components/Value";
-import { getDestinations, getFleet, getMediaSlots, getPricing, getSiteCopy, mediaUrl, variedSlots } from "@/lib/content";
+import { getDestinations, getFleet, getMediaSlots, getSiteCopy, mediaUrl, variedSlots } from "@/lib/content";
 import { isLocale, t } from "@/lib/i18n";
-import { formatMinorAmount } from "@/lib/money";
+import { experienceCopy } from "@/lib/experiences";
+import { brandStory } from "@/lib/brand";
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const [copy, fleet, dest, slots, prices] = await Promise.all([
-    getSiteCopy(locale), getFleet(), getDestinations(), getMediaSlots(), getPricing(),
+  const [copy, fleet, dest, slots] = await Promise.all([
+    getSiteCopy(locale), getFleet(), getDestinations(), getMediaSlots(),
   ]);
   const d = t(locale, copy);
   const slot = (key: string) => slots.find((item) => item.key === key)!;
   const hero = slot("hero");
-  const usesDefaultFilm = ["/img/hero.jpg", "/img/ajet-hero-poster.png"].includes(hero.imageKey);
+  const usesBrandImage = ["/img/hero.jpg", "/img/ajet-hero-poster.png", "/img/brand/window-view.webp"].includes(hero.imageKey);
+  const story = brandStory[locale];
+  const experiences = experienceCopy[locale];
+  const publicStats = d.stats.filter(([value]) => !value.includes("["));
+  const publicCredentials = d.credentials.items.filter((item) => !item.includes("["));
+  const publicPads = d.pads.items.filter((pad) => !pad.name.includes("["));
+  const publicCerts = d.safety.certs.filter((cert) => !cert.title.includes("["));
   const published = fleet.filter((aircraft) => !aircraft.placeholder);
-  const gallery = variedSlots(slots, 6);
+  const gallery = ["journey-01", "corporate", "journey-02"].map((key) => slot(key));
   const destinationFallback = variedSlots(slots, Math.max(dest.length, 1));
   const fleetFallback = variedSlots(slots, Math.max(published.length, 1));
 
   return (
     <>
-      <section className="hero">
-        <div className="hero__media">
-          {usesDefaultFilm ? (
-            <video className="hero__film" autoPlay muted loop playsInline poster="/img/ajet-hero-poster.png" aria-hidden="true">
-              <source src="/films/ajet-hero.mp4" type="video/mp4" />
-            </video>
-          ) : (
-            <img
-              src={mediaUrl(hero.imageKey)}
-              alt={hero.alt[locale]}
-              fetchPriority="high"
+      <section className="hero brand-hero immersive-hero">
+        <div className="immersive-hero__media">
+            {usesBrandImage ? <StudioHero locale={locale} /> : <img
+              src={mediaUrl(hero.imageKey)} alt={hero.alt[locale]} fetchPriority="high"
               style={{ objectPosition: `${hero.focalX}% ${hero.focalY}%` }}
-            />
-          )}
+            />}
         </div>
-        <div className="hero__scrim" aria-hidden="true" />
-
+        <div className="immersive-hero__veil" aria-hidden="true" />
         <div className="hero__inner wrap">
-          <p className="eyebrow">{d.hero.kicker}</p>
-          <h1>{d.hero.title}</h1>
-          <p className="hero__sub">{d.hero.sub}</p>
-          <div className="hero__actions">
-            <Link href={`/${locale}/quote`} className="btn">{d.hero.cta}<span aria-hidden="true">↗</span></Link>
-            <Link href={`/${locale}/quote#estimate`} className="btn btn--ghost">{d.hero.cta2}</Link>
+          <div className="brand-hero__copy">
+            <p className="eyebrow">{d.hero.kicker}</p>
+            <h1>{d.hero.title}</h1>
+            <p className="hero__sub">{d.hero.sub}</p>
+            <div className="hero__actions">
+              <Link href={`/${locale}/quote`} className="btn">{d.hero.cta}<span aria-hidden="true">↗</span></Link>
+              <Link href={`/${locale}/quote#estimate`} className="link-arrow">{d.hero.cta2}</Link>
+            </div>
           </div>
-        </div>
 
-        <div className="hero__creds">
-          <div className="wrap">
-            <span className="hero__creds-label">{d.credentials.label}</span>
-            <ul>
-              {d.credentials.items.map((item) => <li key={item}><Value>{item}</Value></li>)}
-            </ul>
-          </div>
+        </div>
+        <div className="brand-hero__bottom wrap">
+          <span>{story.heritage}</span>
+          <a href="#experience">{story.discover}<span aria-hidden="true">↓</span></a>
+          <span className="brand-hero__location">Ulaanbaatar · Mongolia</span>
         </div>
       </section>
 
-      <section className="statband" aria-label={d.credentials.label}>
+      {publicCredentials.length > 0 && <section className="hero__creds" aria-label={d.credentials.label}>
+        <div className="wrap"><span className="hero__creds-label">{d.credentials.label}</span><ul>{publicCredentials.map((item) => <li key={item}>{item}</li>)}</ul></div>
+      </section>}
+      {publicStats.length > 0 && <section className="statband" aria-label={d.credentials.label}>
+        <div className="wrap">{publicStats.map(([value, label]) => <div className="stat" key={label}><b>{value}</b><span>{label}</span></div>)}</div>
+      </section>}
+
+      <section className="brand-story section" id="experience" aria-labelledby="experience-title">
         <div className="wrap">
-          {d.stats.map(([value, label]) => (
-            <div className="stat" key={label}>
-              <b><Value>{value}</Value></b>
-              <span>{label}</span>
-            </div>
-          ))}
+          <div className="brand-story__intro">
+            <p className="eyebrow">{story.kicker}</p>
+            <div><h2 id="experience-title">{story.title}</h2><p className="lede">{story.intro}</p></div>
+            <img className="brand-story__symbol" src="/img/brand/ajet-symbol.svg" width="92" height="62" alt="" />
+          </div>
+          <div className="brand-values">{story.values.map((item, index) => <article key={item.title}>
+            <span className="brand-values__index">0{index + 1}</span><h3>{item.title}</h3><p>{item.body}</p>
+          </article>)}</div>
+        </div>
+      </section>
+
+      <section className="section section--alt" id="services">
+        <div className="wrap">
+          <div className="section__head">
+            <Reveal direction="left">
+              <p className="eyebrow">{d.services.kicker}</p>
+              <h2>{d.services.title}</h2>
+            </Reveal>
+            <Reveal direction="right"><p className="lede">{d.services.intro}</p></Reveal>
+          </div>
+          <ServiceCollection locale={locale} />
+          <Link href={`/${locale}/services`} className="link-arrow svc__more">{d.services.more}</Link>
         </div>
       </section>
 
@@ -126,25 +150,16 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </div>
       </section>
 
-      <section className="section section--alt" id="services">
-        <div className="wrap">
-          <div className="section__head">
-            <Reveal direction="left">
-              <p className="eyebrow">{d.services.kicker}</p>
-              <h2>{d.services.title}</h2>
-            </Reveal>
-            <Reveal direction="right"><p className="lede">{d.services.intro}</p></Reveal>
+      <CabinExperience locale={locale} />
+      <GroundCare locale={locale} />
+
+      <section className="section journey-extras" aria-labelledby="journey-extras-title">
+        <div className="wrap"><p className="eyebrow">{experiences.homeKicker}</p><h2 id="journey-extras-title">{experiences.homeTitle}</h2>
+          <div className="experience-cards">
+            <Link href={`/${locale}/airport-express`}><img src="/img/brand/window-view.webp" alt="" loading="lazy" /><div><span>{experiences.duration}</span><h3>{experiences.express}</h3><p>{experiences.homeExpress}</p><b aria-hidden="true">↗</b></div></Link>
+            <Link href={`/${locale}/lounges`}><img src="/img/brand/lounge-concept.webp" alt="" loading="lazy" /><div><span>{experiences.loungeStatus}</span><h3>{experiences.lounges}</h3><p>{experiences.homeLounge}</p><b aria-hidden="true">↗</b></div></Link>
+            <Link href={`/${locale}/careers`}><img src="/img/ajet-studio-poster.webp" alt="" loading="lazy" /><div><span>{experiences.openPositions}</span><h3>{experiences.careers}</h3><p>{experiences.homeCareers}</p><b aria-hidden="true">↗</b></div></Link>
           </div>
-          <div className="svc">
-            {d.services.items.map((item) => (
-              <article className="svc__item rv" key={item.name}>
-                <span className="svc__index">{item.index}</span>
-                <h3>{item.name}</h3>
-                <p>{item.body}</p>
-              </article>
-            ))}
-          </div>
-          <Link href={`/${locale}/services`} className="link-arrow svc__more">{d.services.more}</Link>
         </div>
       </section>
 
@@ -183,15 +198,15 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <ul className="checks">
               {d.safety.points.map((point) => <li key={point}><span aria-hidden="true">✓</span>{point}</li>)}
             </ul>
-            <div className="certs">
-              {d.safety.certs.map((cert) => (
+            {publicCerts.length > 0 && <div className="certs">
+              {publicCerts.map((cert) => (
                 <article className="cert" key={cert.label}>
                   <span className="cert__label">{cert.label}</span>
                   <h3><Value>{cert.title}</Value></h3>
                   <p>{cert.body}</p>
                 </article>
               ))}
-            </div>
+            </div>}
           </div>
           <Link href={`/${locale}/safety`} className="link-arrow">{d.more}</Link>
         </div>
@@ -202,7 +217,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <Reveal direction="image">
             <div className="about__media">
               <img
-                src={mediaUrl(slot("corporate").imageKey)}
+                src={slot("corporate").imageKey === "/img/mountains.jpg" ? "/img/brand/mountain-view.webp" : mediaUrl(slot("corporate").imageKey)}
                 alt={slot("corporate").alt[locale]}
                 loading="lazy"
                 style={{ objectPosition: `${slot("corporate").focalX}% ${slot("corporate").focalY}%` }}
@@ -216,7 +231,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               <p className="lede">{d.about.intro}</p>
               <p>{d.about.body}</p>
               <dl className="about__facts">
-                {d.about.facts.map(([value, label]) => (
+                {d.about.facts.filter(([value]) => !value.includes("[")).map(([value, label]) => (
                   <div key={label}><dt><Value>{value}</Value></dt><dd>{label}</dd></div>
                 ))}
               </dl>
@@ -226,7 +241,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </div>
       </section>
 
-      <section className="section pads" id="helipads">
+      {publicPads.length > 0 && <section className="section pads" id="helipads">
         <div className="wrap">
           <div className="section__head">
             <Reveal direction="left">
@@ -236,7 +251,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <Reveal direction="right"><p className="lede">{d.pads.intro}</p></Reveal>
           </div>
           <div className="padlist">
-            {d.pads.items.slice(0, 3).map((pad, index) => (
+            {publicPads.slice(0, 3).map((pad, index) => (
               <article className="pad rv" key={pad.name}>
                 <span className="pad__index">{String(index + 1).padStart(2, "0")}</span>
                 <span className="pad__role">{pad.role}</span>
@@ -248,7 +263,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           </div>
           <Link href={`/${locale}/helipads`} className="link-arrow">{d.more}</Link>
         </div>
-      </section>
+      </section>}
 
       <section className="section section--alt section--dest" id="destinations">
         <div className="wrap">
@@ -279,32 +294,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </div>
       </section>
 
-      {prices.length > 0 && (
-        <section className="section section--prices" aria-labelledby="public-prices">
-          <div className="wrap">
-            <Reveal direction="left">
-              <p className="eyebrow">{locale === "mn" ? "Үнийн мэдээлэл" : "Indicative pricing"}</p>
-              <h2 id="public-prices">{locale === "mn" ? "Эхлэх үнэ" : "Starting prices"}</h2>
-            </Reveal>
-            <div className="pricelist">
-              {prices.map((price) => (
-                <article className="priceitem" key={price.id}>
-                  <div>
-                    <h3>{price.label[locale]}</h3>
-                    {price.note[locale] && <p>{price.note[locale]}</p>}
-                  </div>
-                  <strong>
-                    {locale === "mn" ? "Үүнээс эхэлнэ" : "From"}{" "}
-                    {formatMinorAmount(price.amountMinor, price.currency, locale)}
-                  </strong>
-                </article>
-              ))}
-            </div>
-            <p className="note">{d.priceDisclaimer}</p>
-          </div>
-        </section>
-      )}
-
       <section className="section section--faq" id="faq">
         <div className="wrap faq__grid">
           <Reveal direction="left">
@@ -331,7 +320,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <div className="cta__actions">
               <Link href={`/${locale}/quote`} className="btn">{d.cta.btn}<span aria-hidden="true">↗</span></Link>
             </div>
-            <p className="note cta__note">{d.placeholderNote}</p>
+            <p className="note cta__note">{d.foot.note}</p>
           </Reveal>
         </div>
       </section>

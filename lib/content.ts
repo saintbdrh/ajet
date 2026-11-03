@@ -1,4 +1,4 @@
-import { getDatabase } from "@/lib/cloudflare";
+import { getDatabase } from "@/lib/db";
 import { isCmsCopyKey, type CmsCopy, type Locale } from "@/lib/i18n";
 
 export type Localized = { mn: string; en: string };
@@ -10,16 +10,16 @@ export type MediaSlot = {
   alt: Localized;
 };
 export const defaultMediaSlots: MediaSlot[] = [
-  { key: "hero", imageKey: "/img/ajet-hero-poster.png", focalX: 50, focalY: 50, alt: { mn: "Ajet нисдэг тэрэгний дүрслэл", en: "Ajet helicopter cinematic render" } },
-  { key: "membership", imageKey: "/img/lake.jpg", focalX: 50, focalY: 50, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" } },
-  { key: "corporate", imageKey: "/img/mountains.jpg", focalX: 50, focalY: 50, alt: { mn: "Уулсын оргил", en: "Mountain peaks" } },
-  { key: "journey-01", imageKey: "/img/lake.jpg", focalX: 50, focalY: 52, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" } },
-  { key: "journey-02", imageKey: "/img/ajet-aircraft-side.png", focalX: 58, focalY: 50, alt: { mn: "Нисдэг тэрэгний бүхээг", en: "A helicopter in flight" } },
-  { key: "journey-03", imageKey: "/img/hero.jpg", focalX: 65, focalY: 50, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" } },
-  { key: "journey-04", imageKey: "/img/mountains.jpg", focalX: 50, focalY: 48, alt: { mn: "Уулсын оргил", en: "Mountain peaks" } },
-  { key: "journey-05", imageKey: "/img/lake.jpg", focalX: 50, focalY: 44, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" } },
-  { key: "journey-06", imageKey: "/img/mountains.jpg", focalX: 50, focalY: 57, alt: { mn: "Уулсын дээгүүрх нислэг", en: "A flight above mountain peaks" } },
-  { key: "journey-07", imageKey: "/img/hero.jpg", focalX: 50, focalY: 54, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" } },
+  { key: "hero", imageKey: "/img/brand/window-view.webp", focalX: 50, focalY: 50, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" } },
+  { key: "membership", imageKey: "/img/brand/window-view.webp", focalX: 50, focalY: 50, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" } },
+  { key: "corporate", imageKey: "/img/ajet/ec145-cabin.webp", focalX: 50, focalY: 50, alt: { mn: "A-JET EC145-ийн бодит зорчигчийн бүхээг", en: "Actual A-JET EC145 passenger cabin" } },
+  { key: "journey-01", imageKey: "/img/ajet/ec145-rooftop.webp", focalX: 50, focalY: 52, alt: { mn: "Дээврийн талбайд зогссон A-JET EC145", en: "A-JET EC145 parked on a rooftop helipad" } },
+  { key: "journey-02", imageKey: "/img/ajet/studio-detail.webp", focalX: 58, focalY: 50, alt: { mn: "A-JET EC145 нисдэг тэрэгний студийн дүрслэл", en: "Studio rendering of the A-JET EC145 helicopter" } },
+  { key: "journey-03", imageKey: "/img/ajet/ec145-cabin.webp", focalX: 65, focalY: 50, alt: { mn: "A-JET EC145-ийн бодит зорчигчийн бүхээг", en: "Actual A-JET EC145 passenger cabin" } },
+  { key: "journey-04", imageKey: "/img/brand/mountain-view.webp", focalX: 50, focalY: 48, alt: { mn: "Уулсын оргил", en: "Mountain peaks" } },
+  { key: "journey-05", imageKey: "/img/brand/window-view.webp", focalX: 50, focalY: 44, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" } },
+  { key: "journey-06", imageKey: "/img/brand/mountain-view.webp", focalX: 50, focalY: 57, alt: { mn: "Уулсын дээгүүрх нислэг", en: "A flight above mountain peaks" } },
+  { key: "journey-07", imageKey: "/img/brand/window-view.webp", focalX: 50, focalY: 54, alt: { mn: "Агаарын хөлгийн цонхоор харагдах тэнгэр", en: "The sky through an aircraft window" } },
 ];
 
 export function mediaUrl(imageKey: string): string {
@@ -88,9 +88,12 @@ export type PricingItem = {
   orderIndex: number;
 };
 
-// Preview-only seed data. Replace these records with approved fleet and route details.
+// Client-supplied aircraft summary. Operations confirms configuration and availability for every request.
 const seedFleet: Aircraft[] = [
-  { id: "sample-1", name: "Aircraft 1", desc: { mn: "Техникийн мэдээллийг захиалагч нэмнэ.", en: "Technical details to be added by the client." }, focalX: 50, focalY: 50, alt: { mn: "Нисдэг тэрэг", en: "Helicopter" }, placeholder: true },
+  { id: "client-ec145", name: "Airbus EC145", seats: 8,
+    desc: { mn: "Хувийн болон бизнес аялалд зориулсан, найм хүртэлх зорчигчтой нислэг. Боломжийг хүсэлт бүрээр баталгаажуулна.", en: "Private and business travel for up to eight passengers, with availability confirmed for each request." },
+    imageKey: "/img/ajet/ec145-rooftop.webp", focalX: 50, focalY: 60,
+    alt: { mn: "A-JET EC145 нисдэг тэрэг", en: "A-JET EC145 helicopter" }, specificationsVerified: false, placeholder: false },
 ];
 const seedDest: Destination[] = [
   { id: "ub", name: { mn: "Улаанбаатар", en: "Ulaanbaatar" }, lat: 47.92, lng: 106.92, focalX: 50, focalY: 50, alt: { mn: "Улаанбаатар", en: "Ulaanbaatar" }, placeholder: true },
