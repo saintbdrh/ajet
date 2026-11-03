@@ -58,11 +58,11 @@ const heroCredit = {
 const noCredit = { creditText: "", creditUrl: "" };
 
 export const defaultMediaSlots: MediaSlot[] = [
-  { key: "hero", imageKey: "/img/hero.jpg", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" }, ...heroCredit },
+  { key: "hero", imageKey: "/img/ajet-hero-poster.png", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Ajet нисдэг тэрэгний дүрслэл", en: "Ajet helicopter cinematic render" }, ...noCredit },
   { key: "membership", imageKey: "/img/lake.jpg", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" }, ...noCredit },
   { key: "corporate", imageKey: "/img/mountains.jpg", posterKey: null, focalX: 50, focalY: 50, alt: { mn: "Уулсын оргил", en: "Mountain peaks" }, ...noCredit },
   { key: "journey-01", imageKey: "/img/lake.jpg", posterKey: null, focalX: 50, focalY: 52, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" }, ...noCredit },
-  { key: "journey-02", imageKey: "/img/hero.jpg", posterKey: null, focalX: 58, focalY: 50, alt: { mn: "Нисдэг тэрэгний бүхээг", en: "A helicopter in flight" }, ...heroCredit },
+  { key: "journey-02", imageKey: "/img/ajet-aircraft-side.png", posterKey: null, focalX: 58, focalY: 50, alt: { mn: "Нисдэг тэрэгний бүхээг", en: "A helicopter in flight" }, ...noCredit },
   { key: "journey-03", imageKey: "/img/hero.jpg", posterKey: null, focalX: 65, focalY: 50, alt: { mn: "Нисдэг тэрэг уулын дээгүүр нисэж байна", en: "A helicopter flying above the mountains" }, ...heroCredit },
   { key: "journey-04", imageKey: "/img/mountains.jpg", posterKey: null, focalX: 50, focalY: 48, alt: { mn: "Уулсын оргил", en: "Mountain peaks" }, ...noCredit },
   { key: "journey-05", imageKey: "/img/lake.jpg", posterKey: null, focalX: 50, focalY: 44, alt: { mn: "Уулсын дундах нуур", en: "A remote mountain lake" }, ...noCredit },

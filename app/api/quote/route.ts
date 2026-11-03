@@ -223,7 +223,7 @@ export async function POST(request: Request) {
   }
   if (!deliveredChannels.has("email")) {
     const recipients = (env?.QUOTE_TO_EMAIL ?? process.env.QUOTE_TO_EMAIL ?? "")
-      .split(",").map((recipient) => recipient.trim()).filter(Boolean);
+      .split(",").map((recipient: string) => recipient.trim()).filter(Boolean);
     const mailConfigured = Boolean(
       (env?.RESEND_API_KEY ?? process.env.RESEND_API_KEY) &&
       (env?.QUOTE_FROM_EMAIL ?? process.env.QUOTE_FROM_EMAIL) && recipients.length > 0,
