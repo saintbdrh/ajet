@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
+import ExperienceCollection from "@/components/ExperienceCollection";
+import LakeTour from "@/components/LakeTour";
 import RouteMap from "@/components/RouteMap";
 import Value from "@/components/Value";
 import { getDestinations, getMediaSlots, getSiteCopy, mediaUrl, slotStill, variedSlots } from "@/lib/content";
@@ -29,11 +31,13 @@ export default async function Destinations({ params }: { params: Promise<{ local
       <header className="pagehead">
         <div className="wrap">
           <p className="eyebrow">{d.dest.kicker}</p>
-          <h1>{d.dest.title}</h1>
+          <h1>{locale === "mn" ? "Аялал маршрут" : "Tour itineraries"}</h1>
           <p className="lede">{d.dest.intro}</p>
         </div>
       </header>
 
+      <LakeTour locale={locale} />
+      <ExperienceCollection locale={locale} />
       <section className="section section--tight">
         <div className="wrap">
           <Reveal direction="image"><RouteMap points={points} label={d.dest.map} /></Reveal>

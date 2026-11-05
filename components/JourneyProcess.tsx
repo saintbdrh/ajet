@@ -1,0 +1,7 @@
+import Link from "next/link";
+import type { Locale } from "@/lib/i18n";
+export default function JourneyProcess({locale}:{locale:Locale}) {
+ const mn=locale==='mn';
+ const steps=mn ? [['Хүсэл мөрөөдлөөс эхэлье.','Чиглэл, өдөр, хамт явах хүмүүс болон хүссэн үйлчилгээгээ хуваалцаарай.'],['Бид нарийн төлөвлөе.','Манай баг маршрут, буух талбай, нислэгийн боломж, нэмэлт үйлчилгээг хянаж бичгээр санал өгнө.'],['Аяллаа хамт баталгаажуулъя.','Төлөвлөгөө, нөхцөлөө тохиролцсоны дараа уулзах цэг болон аяллын дэлгэрэнгүйг авна.']] : [['Start with an idea.','Share your destination, preferred date, travelling party and the details that matter to you.'],['Let us shape the details.','Our team reviews the route, landing arrangements, availability and requested services before preparing a written proposal.'],['Make it your journey.','Once the plan and terms are agreed, receive your meeting arrangements and final itinerary.']];
+ return <section className="signature-process section"><div className="wrap"><div className="section__head"><div><p className="eyebrow">{mn?'Төлөвлөгөөнөөс аялал хүртэл':'FROM FIRST THOUGHT TO TAKEOFF'}</p><h2>{mn?'Таны цагийг бодолцсон\nгурван алхам.':'Considered at every step.'}</h2></div><Link className="link-arrow" href={`/${locale}/estimate`}>{mn?'Аяллаа төлөвлөх':'Begin your journey'} ↗</Link></div><ol>{steps.map(([title,body],i)=><li key={title}><span>0{i+1}</span><h3>{title}</h3><p>{body}</p></li>)}</ol></div></section>;
+}

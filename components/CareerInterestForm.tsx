@@ -1,4 +1,5 @@
 "use client";
+import { requestId as createRequestId } from "@/lib/request-id";
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@/lib/i18n";
@@ -25,7 +26,7 @@ export default function CareerInterestForm({ locale, enabled }: { locale: Locale
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!enabled || state === "sending") return;
     const form = new FormData(event.currentTarget);
-    requestId.current ??= crypto.randomUUID(); setState("sending");
+    requestId.current ??= createRequestId(); setState("sending");
     try {
       const response = await fetch("/api/careers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         id: requestId.current, locale, name: form.get("name"), email: form.get("email"), phone: form.get("phone"),

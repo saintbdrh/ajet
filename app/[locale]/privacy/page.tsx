@@ -1,0 +1,13 @@
+import { notFound } from "next/navigation";
+import { isLocale } from "@/lib/i18n";
+export async function generateMetadata({params}:{params:Promise<{locale:string}>}){const {locale}=await params;return {title:locale==='mn'?'Таны мэдээлэл':'Your information'};}
+export default async function Privacy({params}:{params:Promise<{locale:string}>}){
+ const {locale}=await params;if(!isLocale(locale))notFound();const mn=locale==='mn';
+ const sections=mn?[
+ ['Хүсэлтэд оруулах мэдээлэл','Үйлчилгээний хүсэлтэд нэр, холбоо барих мэдээлэл, чиглэл эсвэл байршил, огноо, оролцогчдын тоо болон таны нэмсэн тайлбар орно. Зөвхөн хүсэлтийг төлөвлөхөд хэрэгтэй мэдээллээ оруулна уу. Паспорт, төлбөрийн карт болон эрүүл мэндийн дэлгэрэнгүй мэдээллийг энэ маягтаар бүү илгээгээрэй.'],
+ ['Мэдээллийг хэрхэн ашиглах вэ?','A-JET-ийн эрх бүхий баг хүсэлтийг хянах, тантай холбогдох, үйлчилгээний санал бэлтгэхэд ашиглана. Хүсэлт илгээх нь захиалга баталгаажсан гэсэн үг биш.'],
+ ['Газрын зураг ба хуваалцах холбоос','Газрын зургийг гаднын зураг нийлүүлэгчээс ачаална. Аяллын холбоос нь сонгосон байршил, огноо, зорчигчдын тоо зэрэг төлөвлөлтийн мэдээлэл агуулдаг. Зөвхөн хуваалцахыг хүссэн хүмүүстээ илгээгээрэй.'],
+ ['Мэдээллээ засуулах','Хүсэлтийн дугаараа ашиглан танд хариу өгсөн A-JET-ийн багтай холбогдож мэдээллээ засуулах эсвэл мэдээллийн талаар асуух боломжтой.']
+ ]:[['What you share','A service enquiry includes your name, contact details, route or location, date, party size and the notes you choose to add. Include only what is needed to plan your request. Do not send passport documents, payment card details or detailed medical information through this form.'],['How your enquiry is used','Authorised A-JET staff use the enquiry to review your plans, contact you and prepare a service proposal. Sending an enquiry does not confirm a booking.'],['Maps and shared links','Map imagery loads from external map providers. Journey links contain your selected locations, date, passenger count and other planning details. Share a link only with people you intend to see that information.'],['Correcting your details','Use your enquiry reference when contacting the A-JET team that responds to you to correct your information or ask about its handling.']];
+ return <><header className="pagehead"><div className="wrap"><p className="eyebrow">A-JET / {mn?'ТАНЫ МЭДЭЭЛЭЛ':'YOUR INFORMATION'}</p><h1>{mn?'Хүсэлтээ итгэлтэй илгээгээрэй.':'Enquire with confidence.'}</h1><p className="lede">{mn?'Вэб хүсэлт болон аяллын холбоосын тухай.':'A practical guide to enquiries and journey links.'}</p></div></header><section className="section"><div className="wrap privacy-copy">{sections.map(([h,p])=><section key={h}><h2>{h}</h2><p>{p}</p></section>)}</div></section></>;
+}

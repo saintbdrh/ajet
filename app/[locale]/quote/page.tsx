@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { lakeEnquiry } from "@/lib/lake-tour";
+import { plannerEnquiry } from "@/lib/planner";
 import { journeyCopy, isServiceId } from "@/lib/journey";
 import QuoteForm from "@/components/QuoteForm";
 import { expressItinerary, expressSites, experienceCopy } from "@/lib/experiences";
@@ -18,6 +20,8 @@ export default async function Quote({ params, searchParams }: { params: Promise<
   const d = t(locale, copy);
   const query = await searchParams;
   const route = query.service === "airport-express" ? expressItinerary(locale, typeof query.site === "string" ? query.site : "", typeof query.direction === "string" ? query.direction : "") : undefined;
+  const plannedRoute = query.service === "charter" ? plannerEnquiry(query, locale, fleet.filter((a) => !a.placeholder)) : undefined;
+  const lake = query.tour === "khagiin-khar" && query.service === "charter" ? lakeEnquiry(locale, query.via) : undefined;
   const journey = journeyCopy[locale];
   const initialService = isServiceId(query.service) ? query.service : "charter";
   const initialExtras = query.extras === "transfers" ? ["transfers" as const] : [];
@@ -37,6 +41,7 @@ export default async function Quote({ params, searchParams }: { params: Promise<
       <section className="section">
         <div className="wrap quote__grid">
           <aside className="quote__aside">
+            <img className="quote-portrait" src="/img/ajet/ec145-cabin.webp" alt={locale === "mn" ? "A-JET EC145-ийн бүхээг" : "Inside the A-JET EC145"} width="1333" height="1030" />
             <p className="eyebrow">{journey.requestsTitle}</p>
             <p className="lede">{journey.requestsBody}</p>
             <ul className="quote__points">
@@ -56,7 +61,7 @@ export default async function Quote({ params, searchParams }: { params: Promise<
               initialExtras={initialExtras}
               d={d.form}
               locale={locale}
-              initialRoute={route ? { ...route, notes: experienceCopy[locale].expressName } : undefined}
+              initialRoute={route ? { ...route, notes: experienceCopy[locale].expressName } : lake ?? plannedRoute}
               places={[...new Set([...dest.map((p) => p.name[locale]), experienceCopy[locale].airport, ...expressSites.map((p) => p[locale])])]}
               aircraft={fleet.filter((item) => !item.placeholder).map((item) => item.name)}
             />

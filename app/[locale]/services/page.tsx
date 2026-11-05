@@ -15,6 +15,7 @@ export default async function Services({ params }: { params: Promise<{ locale: s
   return <><header className="pagehead"><div className="wrap"><p className="eyebrow">{d.kicker}</p><h1>{d.title}</h1><p className="lede">{d.intro}</p><nav className="service-jumps" aria-label={locale === "mn" ? "Үйлчилгээний төрлүүд" : "Service types"}>{d.services.map((service) => <a key={service.id} href={`#${service.id}`}>{service.name}<span aria-hidden="true">↓</span></a>)}</nav></div></header>
     <section className="section"><div className="wrap"><ServiceCollection locale={locale} detailed /></div></section>
     <GroundCare locale={locale} />
+    <div className="wrap"><Link className="link-arrow" href={`/${locale}/services/transfers`}>{locale === "mn" ? "Угтах, үдэх үйлчилгээг төлөвлөх" : "Explore ground transfer arrangements"} ↗</Link></div>
     <section className="section journey-missions"><div className="wrap"><h2>{d.missionsTitle}</h2><div>{d.missions.map((mission) => <article key={mission.title}><h3>{mission.title}</h3><p>{mission.body}</p></article>)}</div></div></section>
     <section className="cta cta--compact"><div className="wrap"><p className="eyebrow">{d.requestsTitle}</p><h2>{d.pricingTitle}</h2><p className="lede">{d.pricingBody}</p><Link className="btn" href={`/${locale}/quote`}>{locale === "mn" ? "Хүсэлт илгээх" : "Plan your journey"}<span aria-hidden="true">↗</span></Link><p className="note note--block">{d.requestsBody}</p></div></section>
   </>;

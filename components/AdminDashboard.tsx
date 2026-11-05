@@ -1,4 +1,5 @@
 "use client";
+import RequestWorkspace from "@/components/RequestWorkspace";
 import { serviceName } from "@/lib/journey";
 
 import { Fragment, useEffect, useState, type FormEvent } from "react";
@@ -92,6 +93,7 @@ function formatAmount(minor: number, currency: string, locale: string) {
 export default function AdminDashboard({ email, role, logoutUrl, preview = false }: { email: string; role: AdminRole; logoutUrl: string; preview?: boolean }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [serviceFilter, setServiceFilter] = useState("all");
   async function adminRequest<T>(url: string, init?: RequestInit): Promise<T> {
     if (!preview) return request<T>(url, init);
     if (init?.method && init.method !== "GET") throw new Error("Design preview: changes are disabled. Open the authenticated admin to save.");
@@ -582,7 +584,7 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
   };
 
   const matchesQuery = (value: string) => value.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
-  const visibleQuotes = quotes.filter((item) => (statusFilter === "all" || item.status === statusFilter) && matchesQuery([item.name, item.id, item.email, item.phone, item.origin, item.destination, item.organization].join(" ")));
+  const visibleQuotes = quotes.filter((item) => (serviceFilter === "all" || (item.service ?? "charter") === serviceFilter) && (statusFilter === "all" || item.status === statusFilter) && matchesQuery([item.name, item.id, item.email, item.phone, item.origin, item.destination, item.organization].join(" ")));
   const visibleFields = cmsFields.filter((field) => matchesQuery([field.label, field.key, cmsFieldText(locale, field.key, field.label), cmsSectionText(locale, field.group)].join(" ")));
   const tabDescriptions: Record<Tab, string> = locale === "mn" ? {
     quotes: "Нислэгийн хүсэлт, үнийн санал, баталгаажуулалт.", content: "Вэбсайтын Монгол, Англи текстийг нэг дор засах.",
@@ -824,6 +826,7 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
                 ["approved", locale === "mn" ? "Зөвшөөрсөн" : "Client approved"],
               ].map(([status, label]) => <button type="button" key={status} aria-pressed={statusFilter === status} onClick={() => setStatusFilter(statusFilter === status ? "all" : status)}><span>{label}</span><strong>{quotes.filter((item) => item.status === status).length.toString().padStart(2, "0")}</strong><span className="summary-arrow" aria-hidden="true">↗</span></button>)}</div>
               <div className="request-filters" role="group" aria-label={locale === "mn" ? "Төлөвөөр шүүх" : "Filter by status"}>{["all", "requested", "in_review", "quoted", "approved", "confirmed", "declined", "expired", "closed"].map((status) => <button type="button" key={status} aria-pressed={statusFilter === status} onClick={() => setStatusFilter(status)}>{status === "all" ? (locale === "mn" ? "Бүгд" : "All requests") : adminStatusText(locale, status)}</button>)}</div>
+              <label className="request-service-filter">{locale === "mn" ? "Үйлчилгээгээр шүүх" : "Filter by service"}<select value={serviceFilter} onChange={e=>setServiceFilter(e.target.value)}><option value="all">{locale === "mn" ? "Бүх үйлчилгээ" : "All services"}</option>{(["charter","catering","photography"] as const).map(id=><option key={id} value={id}>{serviceName(locale,id)}</option>)}</select><span>{visibleQuotes.length} / {quotes.length}</span></label>
               {visibleQuotes.length === 0 ? <div className="admin-empty">{query || statusFilter !== "all" ? (locale === "mn" ? "Тохирох хүсэлт олдсонгүй. Хайлтаа өөрчилнө үү." : "No matching requests. Try another search or status.") : adminText(locale, "noRequests")}</div> : <div className="admin-table-wrap"><table className="admin-table">
                 <thead><tr><th>{adminText(locale, "request")}</th><th>{adminText(locale, "routeAndDate")}</th><th>{adminText(locale, "contact")}</th><th>{adminText(locale, "passengers")}</th><th>{adminText(locale, "workflow")}</th></tr></thead>
                 <tbody>{visibleQuotes.map((item) => {
@@ -833,7 +836,7 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
                   return (
                     <Fragment key={item.id}>
                       <tr>
-                        <td><strong>{item.name}</strong><small>{item.created_at}</small>{item.notes && <p>{item.notes}</p>}</td>
+                        <td><strong>{item.name}</strong><small>{item.id}</small><small>{item.created_at}</small>{item.notes && <p>{item.notes}</p>}<RequestWorkspace id={item.id} locale={locale} preview={preview} email={email}/></td>
                         <td>{item.origin} → {item.destination}<small>{item.flight_date}{item.flight_time && ` · ${item.flight_time}`}{item.round_trip ? ` · ${adminText(locale, "return")}` : ""}</small></td>
                         <td>{item.name}<small><a href={`tel:${item.phone}`}>{item.phone}</a></small>{item.email && <small><a href={`mailto:${item.email}`}>{item.email}</a></small>}</td>
                         <td><small>{serviceName(locale, item.service ?? "charter")}</small>{item.passengers}<small>{item.service === "charter" || !item.service ? (locale === "mn" ? "зорчигч" : "passengers") : (locale === "mn" ? "зочин / оролцогч" : "guests / participants")}</small></td>

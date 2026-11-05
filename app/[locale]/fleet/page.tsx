@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import AircraftGallery from "@/components/AircraftGallery";
+import PassengerGuide from "@/components/PassengerGuide";
 import CabinExperience from "@/components/CabinExperience";
 import AircraftPortrait from "@/components/AircraftPortrait";
 import Reveal from "@/components/Reveal";
@@ -43,10 +45,10 @@ export default async function Fleet({ params }: { params: Promise<{ locale: stri
           <div className="fleetlist fleetlist--detail">
             {fleet.filter((aircraft) => !aircraft.placeholder).map((aircraft, index) => {
               const specs: [string, string][] = [];
-              if (aircraft.seats) specs.push([d.fleet.seats, String(aircraft.seats)]);
-              if (aircraft.rangeKm) specs.push([d.fleet.range, `${aircraft.rangeKm} km`]);
-              if (aircraft.cruiseKmh) specs.push([d.fleet.speed, `${aircraft.cruiseKmh} km/h`]);
-              if (aircraft.payloadKg) specs.push([d.fleet.payload, `${aircraft.payloadKg} kg`]);
+              if (aircraft.specificationsVerified && aircraft.seats) specs.push([d.fleet.seats, String(aircraft.seats)]);
+              if (aircraft.specificationsVerified && aircraft.rangeKm) specs.push([d.fleet.range, `${aircraft.rangeKm} km`]);
+              if (aircraft.specificationsVerified && aircraft.cruiseKmh) specs.push([d.fleet.speed, `${aircraft.cruiseKmh} km/h`]);
+              if (aircraft.specificationsVerified && aircraft.payloadKg) specs.push([d.fleet.payload, `${aircraft.payloadKg} kg`]);
               return (
                 <article className="acft acft--wide" key={aircraft.id}>
                   <div className="acft__media">
@@ -91,6 +93,8 @@ export default async function Fleet({ params }: { params: Promise<{ locale: stri
         </div>
       </section>
 
+      <AircraftGallery locale={locale} />
+      <PassengerGuide locale={locale} />
       <section className="cta cta--compact">
         <div className="wrap">
           <h2>{d.cta.title}</h2>

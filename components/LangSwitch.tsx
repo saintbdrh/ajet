@@ -10,9 +10,9 @@ export default function LangSwitch({ locale }: { locale: Locale }) {
   const href = path.replace(/^\/(mn|en)/, `/${other}`);
   return (
     <Link href={href} onClick={(event) => {
-      if (window.location.hash) {
+      if (window.location.search || window.location.hash) {
         event.preventDefault();
-        router.push(`${href}${window.location.hash}`);
+        router.push(`${href}${window.location.search}${window.location.hash}`);
       }
     }} hrefLang={other} lang={other} className="lang">
       {other === "mn" ? "МН" : "EN"}

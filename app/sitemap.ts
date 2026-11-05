@@ -1,0 +1,3 @@
+import type { MetadataRoute } from "next";
+import { publicSiteUrl } from "@/lib/site-url";
+export default function sitemap():MetadataRoute.Sitemap{const base=publicSiteUrl();if(!base)return [];const paths=['','/fleet','/services','/services/charter','/services/catering','/services/photography','/services/transfers','/destinations','/airport-express','/lounges','/careers','/about','/safety','/privacy','/estimate'];return ['mn','en'].flatMap(locale=>paths.map(path=>({url:new URL(`/${locale}${path}`,base).href,alternates:{languages:{mn:new URL(`/mn${path}`,base).href,en:new URL(`/en${path}`,base).href}}})));}

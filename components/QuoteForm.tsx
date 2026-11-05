@@ -1,7 +1,9 @@
 "use client";
+import { requestId as createRequestId } from "@/lib/request-id";
 
 import { useRef, useState, type FormEvent } from "react";
 import Script from "next/script";
+import Link from "next/link";
 import { journeyCopy, extraIds, type ExtraId, type ServiceId } from "@/lib/journey";
 import type { Dict, Locale } from "@/lib/i18n";
 
@@ -83,7 +85,7 @@ export default function QuoteForm({
   locale: Locale;
   places: string[];
   aircraft: string[];
-  initialRoute?: { from: string; to: string; notes?: string };
+  initialRoute?: { from: string; to: string; notes?: string; pax?: string; roundTrip?: boolean; date?: string; aircraft?: string };
   initialService?: ServiceId;
   initialExtras?: ExtraId[];
 }) {
@@ -103,7 +105,7 @@ export default function QuoteForm({
   const timeLabel = flight ? copy.time : (locale === "mn" ? "Хүссэн цаг" : "Preferred time");
   const partyLabel = flight ? copy.pax : (locale === "mn" ? "Зочин / оролцогчдын тоо" : "Guests / participants");
   const stepTitles = [flight ? copy.title[0] : (locale === "mn" ? "Юу төлөвлөж байна вэ?" : "What are you planning?"), flight ? copy.title[1] : (locale === "mn" ? "Үйлчилгээг хэзээ авах вэ?" : "When do you need the service?"), locale === "mn" ? "Нэмэлт үйлчилгээ хэрэгтэй юу?" : "What else may we arrange?", copy.title[3], copy.title[4]];
-  const stepDescriptions = [flight ? copy.description[0] : (locale === "mn" ? "Байршил, арга хэмжээ эсвэл зураг авалтын товчоо хуваалцаарай." : "Share the location and a short description of the occasion or project."), copy.description[1], journey.extrasNote, copy.description[3], copy.description[4]];
+  const stepDescriptions = [flight ? copy.description[0] : (locale === "mn" ? "Байршил, арга хэмжээ эсвэл зураг авалтын товчоо хуваалцаарай." : "Share the location and a short description of the occasion or project."), (flight ? copy.description[1] : (locale === "mn" ? "Үйлчилгээ авах өдөр, хүссэн цагаа оруулна уу." : "Share the preferred date and time for your service.")), journey.extrasNote, copy.description[3], copy.description[4]];
   function toggleExtra(id: ExtraId) { updateValue("extras", values.extras.includes(id) ? values.extras.filter((item) => item !== id) : [...values.extras, id]); }
 
   function updateValue<Key extends keyof QuoteValues>(key: Key, value: QuoteValues[Key]) {
@@ -114,7 +116,7 @@ export default function QuoteForm({
   function validateStep(stepIndex: number) {
     const currentStep = stepRefs.current[stepIndex];
     if (!currentStep) return false;
-    const invalidField = Array.from(currentStep.querySelectorAll("input"))
+    const invalidField = (Array.from(currentStep.querySelectorAll("input, select, textarea")) as unknown as Array<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>)
       .find((field) => !field.checkValidity());
     if (!invalidField) return true;
     invalidField.reportValidity();
@@ -146,7 +148,7 @@ export default function QuoteForm({
       values.notes.trim(),
     ].filter(Boolean).join("\n").slice(0, 1000);
     const body = {
-      idempotencyKey: idempotencyKey.current ?? (idempotencyKey.current = crypto.randomUUID()),
+      idempotencyKey: idempotencyKey.current ?? (idempotencyKey.current = createRequestId()),
       locale,
       service: values.service,
       extras: values.extras,
@@ -240,6 +242,8 @@ export default function QuoteForm({
           {values.org && <div><dt>{copy.org}</dt><dd>{values.org}</dd></div>}
           {values.notes && <div><dt>{copy.notes}</dt><dd>{values.notes}</dd></div>}
         </dl>
+        <div className="concierge-review-edit">{[0,1,2,3].map(index=><button key={index} type="button" onClick={()=>{setStep(index);requestAnimationFrame(()=>headingRef.current?.focus());}}>{locale === "mn" ? "Засах" : "Edit"}: {copy.eyebrow[index].split(" / ")[1]}</button>)}</div>
+        <p className="note note--block">{locale === "mn" ? "Таны мэдээллийг хүсэлтийг хянаж, тантай холбогдоход ашиглана." : "Your details are used to review this enquiry and contact you."} <Link href={`/${locale}/privacy`}>{locale === "mn" ? "Мэдээллийн нууцлал" : "About your information"} ↗</Link></p>
       </div>
     </>,
   ];

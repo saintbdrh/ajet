@@ -1,3 +1,4 @@
+import { publicSiteUrl } from "@/lib/site-url";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import "@fontsource/noto-sans/latin-400.css";
@@ -11,6 +12,8 @@ import "../brand.css";
 import "../experience.css";
 import "../journey.css";
 import "../immersive-hero.css";
+import "../planner.css";
+import "../signature.css";
 import "@fontsource/manrope/latin-400.css";
 import "@fontsource/manrope/latin-600.css";
 import "@fontsource/manrope/latin-800.css";
@@ -34,7 +37,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: { default: `${BRAND} — Private Helicopter Charter in Mongolia`, template: `%s | ${BRAND}` },
     description: d.desc,
-    alternates: { languages: { mn: "/mn", en: "/en" } },
+    ...(publicSiteUrl() ? { metadataBase: publicSiteUrl()! } : { robots: { index: false, follow: false } }),
+    openGraph: { type: "website", siteName: "A-JET Aviation", locale: locale === "mn" ? "mn_MN" : "en_US", images: [{ url: "/img/ajet-hero-production.webp", width: 1920, height: 1080, alt: "A-JET EC145 studio portrait" }] },
   };
 }
 
@@ -58,6 +62,7 @@ export default async function RootLayout({ children, params }: { children: React
     <html lang={locale} data-scroll-behavior="smooth">
       <body className="site">
         <div id="top" />
+        <a className="skip-link" href="#main-content">{locale === "mn" ? "Үндсэн агуулга руу" : "Skip to content"}</a>
         <ScrollMotion />
         <SiteHeader
           locale={locale}
@@ -74,7 +79,6 @@ export default async function RootLayout({ children, params }: { children: React
             quote: d.nav.quote,
           }}
         />
-        <a className="skip-link" href="#main-content">{locale === "mn" ? "Үндсэн агуулга руу" : "Skip to content"}</a>
         <main id="main-content">{children}</main>
         <SiteFooter locale={locale} brand={BRAND} d={d} phone={phone} email={email} credits={credits} />
       </body>

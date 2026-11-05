@@ -61,6 +61,7 @@ export default function SiteHeader({
   }, [open]);
 
   const links: [string, string][] = [
+    [`/${locale}/estimate`, locale === "mn" ? "Аяллаа төлөвлөх" : "Plan your journey"],
     [`/${locale}/fleet`, labels.fleet],
     [`/${locale}/services`, labels.services],
     [`/${locale}/airport-express`, extra.express],
@@ -69,7 +70,7 @@ export default function SiteHeader({
     [`/${locale}/safety`, labels.safety],
     [`/${locale}/about`, labels.about],
     [`/${locale}/helipads`, labels.helipads],
-    [`/${locale}/destinations`, labels.destinations],
+    [`/${locale}/destinations`, locale === "mn" ? "Аялал маршрут" : "Tour itineraries"],
   ];
 
   return (
@@ -80,12 +81,12 @@ export default function SiteHeader({
         </Link>
 
         <nav className="hdr__nav" aria-label={locale === "mn" ? "Үндсэн цэс" : "Main navigation"}>
-          {links.filter(([href]) => ["fleet", "services", "airport-express"].some((slug) => href.endsWith(`/${slug}`))).map(([href, label]) => (
+          {links.filter(([href]) => ["estimate", "fleet", "services"].some((slug) => href.endsWith(`/${slug}`))).map(([href, label]) => (
             <Link key={href} href={href} onClick={close} className={pathname.startsWith(href) ? "is-active" : undefined}>{label}</Link>
           ))}
           <details className="hdr__explore" key={pathname} onKeyDown={(event) => { if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); } }}>
             <summary>{extra.company}<span aria-hidden="true">＋</span></summary>
-            <div>{links.filter(([href]) => !["fleet", "services", "airport-express"].some((slug) => href.endsWith(`/${slug}`))).map(([href, label]) => <Link key={href} href={href} onClick={(event) => { close(); const details = event.currentTarget.closest("details"); if (details) details.open = false; }} className={pathname.startsWith(href) ? "is-active" : undefined}>{label}<span aria-hidden="true">↗</span></Link>)}</div>
+            <div>{links.filter(([href]) => !["estimate", "fleet", "services"].some((slug) => href.endsWith(`/${slug}`))).map(([href, label]) => <Link key={href} href={href} onClick={(event) => { close(); const details = event.currentTarget.closest("details"); if (details) details.open = false; }} className={pathname.startsWith(href) ? "is-active" : undefined}>{label}<span aria-hidden="true">↗</span></Link>)}</div>
           </details>
         </nav>
 

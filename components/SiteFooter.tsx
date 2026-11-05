@@ -34,12 +34,13 @@ export default function SiteFooter({
           <nav className="foot__col" aria-label={d.foot.explore}>
             <h4>{d.foot.explore}</h4>
             <ul>
+              <li><Link href={`/${locale}/estimate`}>{d.nav.estimate}</Link></li>
               <li><Link href={`/${locale}/fleet`}>{d.nav.fleet}</Link></li>
               <li><Link href={`/${locale}/services`}>{d.nav.services}</Link></li>
               <li><Link href={`/${locale}/safety`}>{d.nav.safety}</Link></li>
               <li><Link href={`/${locale}/about`}>{d.nav.about}</Link></li>
               <li><Link href={`/${locale}/helipads`}>{d.nav.helipads}</Link></li>
-              <li><Link href={`/${locale}/destinations`}>{d.nav.destinations}</Link></li>
+              <li><Link href={`/${locale}/destinations`}>{locale === "mn" ? "Аялал маршрут" : "Tour itineraries"}</Link></li>
             </ul>
           </nav>
 
@@ -48,10 +49,11 @@ export default function SiteFooter({
             <ul>
               <li><Link href={`/${locale}/airport-express`}>{experienceCopy[locale].express}</Link></li>
               <li><Link href={`/${locale}/lounges`}>{experienceCopy[locale].lounges}</Link></li>
+              <li><Link href={`/${locale}/privacy`}>{locale === "mn" ? "Мэдээллийн нууцлал" : "Your information"}</Link></li>
               <li><Link href={`/${locale}/careers`}>{experienceCopy[locale].careers}</Link></li>
               <li><Link href={`/${locale}/quote`}>{d.nav.quote}</Link></li>
-              <li><a href={`/${locale}#safety`}>{d.nav.safety}</a></li>
-              <li><a href={`/${locale}#about`}>{d.nav.about}</a></li>
+
+
               <li><a href={`/${locale}#contact`}>{d.nav.contact}</a></li>
             </ul>
           </nav>
