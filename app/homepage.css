@@ -1,0 +1,760 @@
+.site:has(.signature-home) {
+  --home-ink: #10110f;
+  --home-paper: #f2efe8;
+  --home-muted: #62625d;
+  --home-gold: #d3b77f;
+  --champ: var(--home-gold);
+  --champ-bright: #e6d6b6;
+  --champ-deep: #927b52;
+  --home-display: "Noto Serif", Georgia, serif;
+  --home-sans: var(--font-manrope), "Noto Sans", Arial, sans-serif;
+  --sans: var(--home-sans);
+  --display: var(--home-display);
+  font-family: var(--home-sans);
+}
+
+.site:has(.signature-home) .hdr--over:not(.is-scrolled):not(.is-open) {
+  color: #fff;
+}
+
+.signature-home {
+  --home-gutter: var(--gutter);
+  overflow: clip;
+  background: var(--home-paper);
+  color: var(--home-ink);
+  font-family: var(--home-sans);
+}
+
+.signature-home h1,
+.signature-home h2,
+.signature-home h3 {
+  font-family: var(--home-display);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-wrap: pretty;
+}
+
+.signature-home .eyebrow {
+  color: var(--home-gold);
+  font-family: var(--home-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+.signature-journey {
+  --route-left: clamp(1.25rem, 4vw, 4rem);
+  --route-width: clamp(2.5rem, 4vw, 4rem);
+  position: relative;
+  isolation: isolate;
+  background: var(--home-ink);
+  color: #fff;
+}
+
+.signature-route {
+  position: absolute;
+  z-index: 4;
+  inset: 0 auto 0 var(--route-left);
+  width: var(--route-width);
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  pointer-events: none;
+}
+
+.signature-route__line {
+  fill: none;
+  stroke: var(--home-gold);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  stroke-width: 1.3;
+  vector-effect: non-scaling-stroke;
+}
+
+.signature-route circle {
+  fill: var(--home-gold);
+  stroke: var(--home-ink);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.signature-hero,
+.signature-destination {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100svh;
+}
+
+.signature-hero {
+  display: flex;
+  align-items: flex-end;
+  padding: 8rem 1.4rem clamp(4.5rem, 9vh, 7rem);
+  background: var(--home-ink);
+}
+
+.signature-hero__poster,
+.signature-hero__shade,
+.signature-destination__image,
+.signature-destination__shade {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.signature-hero__shade {
+  z-index: 2;
+}
+
+.signature-hero__poster,
+.signature-destination__image {
+  object-position: center;
+}
+
+.signature-hero__shade,
+.signature-destination__shade {
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgb(8 10 10 / 90%) 0%, rgb(8 10 10 / 64%) 48%, rgb(8 10 10 / 18%) 100%),
+    linear-gradient(0deg, rgb(8 10 10 / 88%) 0%, transparent 64%),
+    linear-gradient(180deg, rgb(8 10 10 / 48%) 0%, transparent 28%);
+}
+
+.signature-hero__shade {
+  z-index: 2;
+}
+
+.signature-destination__shade {
+  z-index: 0;
+}
+
+.signature-hero__content,
+.signature-destination__content {
+  width: min(100%, 1480px);
+  margin-inline: auto;
+  padding-left: calc(var(--route-width) + clamp(1.5rem, 5vw, 5rem));
+}
+
+.signature-hero__content {
+  position: relative;
+  z-index: 3;
+}
+
+.signature-hero h1 {
+  max-width: 17ch;
+  margin: 0;
+  font-size: clamp(3.2rem, 8.6vw, 8.2rem);
+}
+
+.signature-hero__sentence,
+.signature-destination__sentence {
+  max-width: 43ch;
+  margin-top: 1.35rem;
+  color: rgb(255 255 255 / 88%);
+  font-size: clamp(0.98rem, 1.3vw, 1.16rem);
+  line-height: 1.75;
+}
+
+.signature-hero__waypoint,
+.signature-waypoint {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: clamp(1.8rem, 4vh, 3rem);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.signature-hero__waypoint span,
+.signature-waypoint span {
+  color: var(--home-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.signature-hero__actions,
+.signature-destination__actions {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 1.5rem 3rem;
+  margin-top: 1.6rem;
+}
+
+.signature-price {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.signature-price > span {
+  color: rgb(255 255 255 / 72%);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+.signature-price strong {
+  font-size: 1.08rem;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+}
+
+.signature-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 48px;
+  border-bottom: 1px solid var(--home-gold);
+  color: #fff;
+  font-size: 0.73rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  transition: color 320ms ease-out, border-color 320ms ease-out;
+}
+
+.signature-link:hover {
+  border-color: #fff;
+  color: var(--home-gold);
+}
+
+.signature-link span {
+  color: var(--home-gold);
+  font-size: 1rem;
+}
+
+.signature-link:focus-visible,
+.signature-film-button:focus-visible,
+.signature-film-dialog button:focus-visible {
+  outline: 2px solid var(--home-gold);
+  outline-offset: 5px;
+}
+
+.signature-hero__scroll {
+  position: absolute;
+  z-index: 2;
+  right: var(--home-gutter);
+  bottom: 1.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: #fff;
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+}
+
+.signature-hero__scroll span {
+  color: var(--home-gold);
+  font-size: 1rem;
+}
+
+.signature-film {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.signature-film__background {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.78;
+}
+
+.signature-film-button {
+  position: absolute;
+  z-index: 5;
+  top: clamp(5.5rem, 11vh, 8rem);
+  right: clamp(1.25rem, 5vw, 5rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 48px;
+  padding: 0 1rem;
+  border: 1px solid rgb(255 255 255 / 78%);
+  background: rgb(12 14 13 / 36%);
+  color: #fff;
+  font: 600 0.62rem var(--home-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+}
+
+.signature-film-button:hover {
+  border-color: var(--home-gold);
+  color: var(--home-gold);
+}
+
+.signature-film-button span {
+  color: var(--home-gold);
+  font-size: 1rem;
+}
+
+.signature-film-dialog {
+  position: fixed;
+  width: min(96vw, 1440px);
+  max-width: none;
+  max-height: 94svh;
+  padding: 0;
+  overflow: visible;
+  border: 1px solid rgb(255 255 255 / 22%);
+  background: #080909;
+  color: #fff;
+  pointer-events: auto;
+}
+
+.signature-film-dialog::backdrop {
+  background: rgb(0 0 0 / 88%);
+  backdrop-filter: blur(8px);
+}
+
+.signature-film-dialog__close {
+  position: absolute;
+  z-index: 2;
+  top: 0.8rem;
+  right: 0.8rem;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 55%);
+  background: rgb(0 0 0 / 65%);
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.signature-film-dialog video {
+  display: block;
+  width: 100%;
+  max-height: 88svh;
+  aspect-ratio: 16 / 9;
+  background: #080909;
+  object-fit: contain;
+}
+
+.signature-destination {
+  display: flex;
+  align-items: flex-end;
+  padding: 7rem 1.4rem clamp(5rem, 10vh, 8rem);
+  background: #18201d;
+}
+
+.signature-destination__shade {
+  background:
+    linear-gradient(90deg, rgb(8 10 10 / 72%) 0%, rgb(8 10 10 / 35%) 58%, rgb(8 10 10 / 7%) 100%),
+    linear-gradient(0deg, rgb(8 10 10 / 84%) 0%, transparent 67%);
+}
+
+.signature-destination__content {
+  position: relative;
+  z-index: 2;
+}
+
+.signature-waypoint {
+  margin-top: 0;
+  margin-bottom: clamp(1.5rem, 4vh, 3rem);
+}
+
+.signature-destination h2 {
+  max-width: 12ch;
+  font-size: clamp(3rem, 8vw, 7.5rem);
+}
+
+.signature-destination__placeholder {
+  position: absolute;
+  z-index: 1;
+  top: 7rem;
+  right: var(--home-gutter);
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgb(255 255 255 / 72%);
+  background: rgb(12 14 13 / 55%);
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.signature-aircraft {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 7rem);
+  min-height: 660px;
+  padding: clamp(5rem, 10vw, 9rem) var(--home-gutter);
+  background: var(--home-paper);
+  color: var(--home-ink);
+}
+
+.signature-aircraft__copy {
+  width: min(100%, 560px);
+  margin-inline: auto;
+}
+
+.signature-aircraft .eyebrow,
+.signature-editorial .eyebrow {
+  color: #4a483f;
+}
+
+.signature-aircraft h2 {
+  margin: 0;
+  font-size: clamp(3.5rem, 7.5vw, 7rem);
+  line-height: 0.98;
+}
+
+.signature-aircraft__copy > p:not(.eyebrow),
+.signature-editorial__copy > p:not(.eyebrow) {
+  max-width: 43ch;
+  margin-top: 1.4rem;
+  color: #454641;
+  font-size: 0.98rem;
+  line-height: 1.8;
+}
+
+.signature-aircraft__specs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2.5rem;
+  padding-block: 1.25rem;
+  border-block: 1px solid rgb(16 17 15 / 22%);
+}
+
+.signature-aircraft__specs div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.signature-aircraft__specs strong {
+  font-family: var(--home-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.signature-aircraft__specs span {
+  color: #4b4c46;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.signature-aircraft__copy .signature-link {
+  margin-top: 1.5rem;
+}
+
+.signature-link--dark {
+  border-color: #8d744a;
+  color: var(--home-ink);
+}
+
+.signature-link--dark:hover {
+  border-color: var(--home-ink);
+  color: #5e4d30;
+}
+
+.signature-link--dark span {
+  color: #765c31;
+}
+
+.signature-aircraft__visual {
+  display: grid;
+  min-width: 0;
+  min-height: 360px;
+  aspect-ratio: 16 / 10;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 60% 50%, rgb(211 183 127 / 15%), transparent 57%),
+    linear-gradient(145deg, #e5e0d4, #d5d0c3);
+}
+
+.signature-aircraft__visual img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 450ms ease-out;
+}
+
+.signature-aircraft__visual:hover img {
+  transform: scale(1.025);
+}
+
+.signature-editorial {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  align-items: stretch;
+  min-height: 560px;
+  background: #e6e2d9;
+  color: var(--home-ink);
+}
+
+.signature-editorial__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 560px;
+  object-fit: cover;
+}
+
+.signature-editorial__copy {
+  align-self: center;
+  padding: clamp(3rem, 7vw, 7rem);
+}
+
+.signature-editorial__copy h2 {
+  max-width: 11ch;
+  font-size: clamp(2.8rem, 5.2vw, 5.2rem);
+}
+
+.signature-editorial__copy .signature-link {
+  margin-top: 2rem;
+}
+
+.home-faq-page {
+  min-height: 70svh;
+  padding: clamp(6rem, 12vw, 10rem) var(--home-gutter);
+  background: var(--home-paper);
+  color: var(--home-ink);
+  font-family: var(--font-manrope), "Noto Sans", Arial, sans-serif;
+}
+
+.home-faq-page__heading,
+.home-faq-page__items {
+  width: min(100%, 960px);
+  margin-inline: auto;
+}
+
+.home-faq-page__heading .eyebrow {
+  color: #4a483f;
+}
+
+.home-faq-page h1 {
+  max-width: 14ch;
+  font-size: clamp(3rem, 7vw, 6rem);
+}
+
+.home-faq-page__items {
+  margin-top: clamp(3rem, 7vw, 6rem);
+  border-top: 1px solid rgb(16 17 15 / 25%);
+}
+
+.home-faq-page details {
+  border-bottom: 1px solid rgb(16 17 15 / 25%);
+}
+
+.home-faq-page summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 76px;
+  padding-block: 1rem;
+  color: var(--home-ink);
+  font-family: var(--home-display);
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  cursor: pointer;
+  list-style: none;
+}
+
+.home-faq-page summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-faq-page summary::after {
+  color: #765c31;
+  content: "+";
+  font-family: var(--home-sans);
+  font-size: 1.4rem;
+}
+
+.home-faq-page details[open] summary::after {
+  content: "−";
+}
+
+.home-faq-page details p {
+  max-width: 70ch;
+  padding: 0 2.5rem 1.5rem 0;
+  color: #454641;
+  font-size: 0.92rem;
+  line-height: 1.8;
+}
+
+@supports (animation-timeline: view()) {
+  .signature-route__line {
+    stroke-dashoffset: 1;
+    animation: signature-route-draw 1s linear both;
+    animation-timeline: view(block);
+    animation-range: entry 0% exit 100%;
+  }
+
+  .signature-destination__content {
+    animation: signature-panel-reveal 400ms ease-out both;
+    animation-timeline: view(block);
+    animation-range: entry 0% entry 40%;
+  }
+}
+
+@keyframes signature-route-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes signature-panel-reveal {
+  from { opacity: 0.35; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 760px) {
+  .signature-hero {
+    padding-bottom: 6rem;
+  }
+
+  .signature-hero__shade {
+    background:
+      linear-gradient(90deg, rgb(8 10 10 / 88%) 0%, rgb(8 10 10 / 32%) 100%),
+      linear-gradient(0deg, rgb(8 10 10 / 91%) 0%, rgb(8 10 10 / 20%) 75%),
+      linear-gradient(180deg, rgb(8 10 10 / 53%) 0%, transparent 29%);
+  }
+
+  .signature-film-button {
+    right: 1.25rem;
+    min-height: 44px;
+    padding-inline: 0.8rem;
+    font-size: 0.57rem;
+  }
+
+  .signature-destination {
+    min-height: 92svh;
+    padding-bottom: 5.5rem;
+  }
+
+  .signature-destination__shade {
+    background:
+      linear-gradient(90deg, rgb(8 10 10 / 66%) 0%, rgb(8 10 10 / 20%) 100%),
+      linear-gradient(0deg, rgb(8 10 10 / 89%) 0%, transparent 80%);
+  }
+
+  .signature-aircraft {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    min-height: auto;
+    padding-block: 5rem;
+  }
+
+  .signature-aircraft__visual {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+
+  .signature-editorial {
+    grid-template-columns: 1fr;
+  }
+
+  .signature-editorial__image {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+
+  .signature-editorial__copy {
+    padding: 3.5rem var(--home-gutter) 4.5rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .signature-hero__content,
+  .signature-destination__content {
+    padding-left: calc(var(--route-width) + 1.25rem);
+  }
+
+  .signature-hero h1 {
+    max-width: 11ch;
+    font-size: clamp(3rem, 13vw, 3.75rem);
+  }
+
+  .signature-destination h2 {
+    font-size: clamp(2.7rem, 12vw, 4rem);
+  }
+
+  .signature-hero__actions,
+  .signature-destination__actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .signature-destination__placeholder {
+    top: 6.5rem;
+    right: 1.25rem;
+    max-width: 12rem;
+    text-align: center;
+  }
+}
+
+.signature-stats {
+  padding: clamp(5rem, 11vw, 10rem) var(--home-gutter);
+  background: #10110f;
+  color: #f2efe8;
+  text-align: center;
+}
+
+.signature-stats__inner {
+  width: min(100%, 920px);
+  margin-inline: auto;
+}
+
+.signature-stats .eyebrow {
+  justify-content: center;
+}
+
+.signature-stats__number {
+  display: block;
+  margin-top: 0.3rem;
+  color: #fff;
+  font-family: var(--home-display);
+  font-size: clamp(4rem, 15vw, 11rem);
+  font-weight: 500;
+  letter-spacing: -0.06em;
+  line-height: 0.98;
+  font-variant-numeric: tabular-nums;
+}
+
+.signature-stats__label {
+  margin: 1.3rem 0 0;
+  color: #d3b77f;
+  font-size: clamp(0.82rem, 1.5vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signature-route__line {
+    stroke-dashoffset: 0 !important;
+    animation: none !important;
+  }
+
+  .signature-destination__content {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .signature-aircraft__visual img,
+  .signature-link {
+    transition: none;
+  }
+}

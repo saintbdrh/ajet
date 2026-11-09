@@ -1,0 +1,708 @@
+.site:has(.flight-scene) .hdr--over {
+  position: fixed;
+  z-index: 40;
+  top: 14px;
+  left: 50%;
+  width: min(1540px, calc(100% - 32px));
+  transform: translateX(-50%);
+  border: 1px solid rgb(255 255 255 / 17%);
+  border-radius: 999px;
+  background: rgb(5 10 18 / 55%);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 22%);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.site:has(.flight-scene) .hdr--over.is-scrolled,
+.site:has(.flight-scene) .hdr--over.is-open {
+  background: rgb(5 10 18 / 88%);
+}
+
+.site:has(.flight-scene) .hdr__bar {
+  min-height: 64px;
+  padding-inline: clamp(14px, 2.1vw, 32px);
+}
+
+.site:has(.flight-scene) .hdr__brand { flex: 0 0 auto; }
+.site:has(.flight-scene) .hdr__nav { justify-content: center; flex: 1; }
+.site:has(.flight-scene) .hdr__actions { flex: 0 0 auto; }
+.site:has(.flight-scene) .hdr__cta { border-radius: 999px; }
+
+.flight-scene {
+  --scene-gold: #e7bd77;
+  --scene-white: #f4f1e9;
+  position: relative;
+  height: calc(100svh + (var(--scene-count) - 1) * 58svh);
+  min-height: 100svh;
+  overflow: clip;
+  background: #070d18;
+  color: var(--scene-white);
+  font-family: var(--font-manrope), "Noto Sans", Arial, sans-serif;
+}
+
+.flight-scene__sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 620px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #070d18;
+}
+
+.flight-scene__sky,
+.flight-scene__sky::before,
+.flight-scene__sky::after,
+.flight-scene__stars,
+.flight-scene__sunset {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.flight-scene__sky {
+  z-index: 0;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 82% 69%, rgb(175 91 40 / 20%), transparent 25%),
+    linear-gradient(180deg, #070d18 0%, #111923 45%, #291e20 76%, #11151c 100%);
+}
+
+.flight-scene__sky-photo {
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 auto;
+  height: 56%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 38%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 38%, transparent 100%);
+  pointer-events: none;
+}
+
+.flight-scene__sky-photo img {
+  object-fit: cover;
+  object-position: center top;
+  opacity: .68;
+}
+
+.flight-scene__sky::before {
+  z-index: 1;
+  content: "";
+  background: linear-gradient(180deg, rgb(5 9 16 / 32%), transparent 32%, rgb(6 10 17 / 55%));
+}
+
+.flight-scene__sky::after {
+  z-index: 1;
+  content: "";
+  top: auto;
+  height: 27%;
+  background: linear-gradient(0deg, #080d16 7%, rgb(8 13 22 / 91%) 38%, transparent);
+}
+
+.flight-scene__cms-image {
+  z-index: 0;
+  object-fit: cover;
+  opacity: .46;
+  mix-blend-mode: screen;
+}
+
+.flight-scene__landscape-asset {
+  z-index: 1;
+  object-fit: cover;
+  object-position: center 58%;
+}
+
+.flight-scene__stars {
+  z-index: 2;
+  opacity: .3;
+  background-image:
+    radial-gradient(1px 1px at 9% 21%, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 22% 14%, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 41% 28%, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 66% 12%, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 91% 30%, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 78% 20%, #fff 50%, transparent 100%);
+}
+
+.flight-scene__sunset {
+  z-index: 2;
+  inset: auto -12% 15% auto;
+  width: 52vw;
+  height: 36vh;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(220 143 76 / 20%), rgb(179 90 44 / 9%) 35%, transparent 72%);
+  filter: blur(13px);
+}
+
+.flight-scene__mountain-slot {
+  z-index: 3;
+  position: absolute;
+  inset: auto 0 0;
+  height: 27%;
+  border-top: 1px dashed rgb(231 189 119 / 23%);
+  background:
+    linear-gradient(180deg, rgb(8 13 22 / 28%), rgb(5 9 16 / 92%)),
+    linear-gradient(90deg, transparent, rgb(156 101 61 / 9%), transparent);
+}
+
+.flight-scene__mountain-slot span {
+  position: absolute;
+  right: clamp(18px, 5vw, 80px);
+  bottom: 1.4rem;
+  padding: .5rem .7rem;
+  border: 1px solid rgb(231 189 119 / 32%);
+  border-radius: 6px;
+  background: rgb(5 9 16 / 82%);
+  color: #f0d39d;
+  font-size: .64rem;
+  letter-spacing: .12em;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.flight-scene__mountain-slot span:first-child { bottom: 2.4rem; }
+.flight-scene__mountain-slot span:last-child:not(:first-child) { right: auto; left: clamp(18px, 5vw, 80px); }
+.flight-scene__mountain-slot.has-landscape { border-top-color: transparent; background: linear-gradient(0deg, #070d18 0%, rgb(7 13 24 / 42%) 40%, transparent); }
+
+.flight-scene__cloud-asset {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: 14%;
+  left: 0;
+  height: 34%;
+  pointer-events: none;
+}
+
+.flight-scene__cloud-asset img { object-fit: contain; object-position: center bottom; }
+.flight-scene__cloud-asset--2 { bottom: 20%; height: 29%; }
+.flight-scene__cloud-asset--3 { bottom: 10%; height: 38%; }
+
+.flight-scene__heading {
+  position: absolute;
+  z-index: 4;
+  top: clamp(115px, 17vh, 185px);
+  left: clamp(26px, 7vw, 120px);
+  width: min(36vw, 510px);
+  padding: clamp(1rem, 2vw, 1.7rem);
+  border: 1px solid rgb(231 189 119 / 38%);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgb(5 10 18 / 91%), rgb(5 10 18 / 78%));
+  box-shadow: 0 18px 54px rgb(0 0 0 / 36%), inset 0 1px 0 rgb(255 255 255 / 10%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.flight-scene__heading .eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 1rem;
+  padding: .45rem .65rem;
+  border: 1px solid rgb(231 189 119 / 38%);
+  border-radius: 5px;
+  background: rgb(231 189 119 / 10%);
+  color: #f2d69f;
+  font-size: .68rem;
+  letter-spacing: .12em;
+}
+
+.flight-scene__heading h1 {
+  max-width: 12ch;
+  margin: 0;
+  color: var(--scene-white);
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: clamp(2.4rem, 5vw, 5.2rem);
+  font-weight: 500;
+  letter-spacing: -.055em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.flight-scene__heading > p:last-child {
+  max-width: 38ch;
+  margin-top: 1rem;
+  margin-bottom: 0;
+  color: #fff;
+  font-size: clamp(.9rem, 1vw, 1rem);
+  line-height: 1.65;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 45%);
+}
+
+.flight-scene__aircraft-wrap {
+  position: absolute;
+  z-index: 3;
+  top: 35%;
+  left: 50%;
+  width: min(86vw, 1280px);
+  height: min(56vh, 520px);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.flight-scene__aircraft {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.flight-scene__aircraft.has-body:not(.has-sequence) {
+  transform:
+    translate3d(var(--flight-offset-x), var(--flight-offset-y), 0)
+    rotate(var(--flight-tilt))
+    scale(var(--flight-scale));
+  transform-origin: center;
+  will-change: transform;
+}
+
+.flight-scene__aircraft-layers { position: absolute; inset: 0; }
+.flight-scene__webgl { position: absolute; inset: 0; width: 100%; height: 100%; }
+.flight-scene__webgl canvas { display: block; width: 100%; height: 100%; }
+.flight-scene__shadow-asset { z-index: 1; top: auto !important; bottom: 0 !important; height: 42% !important; object-fit: contain; opacity: .75; }
+.flight-scene__frames { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; }
+.flight-scene__body-asset { z-index: 3; object-fit: contain; }
+.flight-scene__rotor-asset { z-index: 4; top: 7% !important; bottom: auto !important; height: 33% !important; object-fit: contain; }
+.flight-scene__rotor-asset.is-spinning { animation: flight-rotor-spin 720ms linear infinite; }
+
+.flight-scene__asset-slots {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .55rem;
+  width: 78%;
+}
+
+.flight-scene__asset-slots span {
+  padding: .48rem .7rem;
+  border: 1px solid rgb(255 255 255 / 13%);
+  border-radius: 999px;
+  background: rgb(5 9 15 / 75%);
+  color: rgb(244 241 233 / 64%);
+  font-size: .55rem;
+  letter-spacing: .07em;
+  text-align: center;
+}
+
+.flight-scene__asset-error {
+  position: absolute;
+  inset: auto 0 -2rem;
+  color: #ffcfbf;
+  font-size: .6rem;
+  text-align: center;
+}
+
+.flight-scene__manifest-error {
+  position: absolute;
+  z-index: 30;
+  right: 1rem;
+  bottom: 3rem;
+  max-width: min(420px, 80vw);
+  padding: .6rem .8rem;
+  border: 1px solid rgb(255 207 191 / 55%);
+  border-radius: 8px;
+  background: rgb(24 9 10 / 90%);
+  color: #ffcfbf;
+  font-size: .65rem;
+}
+
+.flight-scene__route-caption {
+  position: absolute;
+  z-index: 4;
+  top: 11%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: clamp(.45rem, 1.1vw, 1rem);
+  padding: .55rem .8rem;
+  border: 1px solid rgb(244 241 233 / 20%);
+  border-radius: 999px;
+  background: rgb(5 9 16 / 82%);
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: .62rem;
+  letter-spacing: .12em;
+  white-space: nowrap;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.flight-scene__route-caption i {
+  width: clamp(14px, 2.7vw, 42px);
+  border-top: 1px solid rgb(231 189 119 / 52%);
+}
+
+.flight-scene__progress {
+  position: absolute;
+  z-index: 20;
+  top: 50%;
+  left: clamp(14px, 2vw, 34px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transform: translateY(-50%);
+}
+
+.flight-scene__progress button {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  padding: 0;
+  border: 1px solid rgb(244 241 233 / 56%);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+
+.flight-scene__progress button[aria-current="step"] {
+  background: var(--scene-gold);
+  border-color: var(--scene-gold);
+  box-shadow: 0 0 12px rgb(231 189 119 / 75%);
+  transform: scale(1.2);
+}
+
+.flight-scene__progress span {
+  display: flex;
+  gap: 5px;
+  margin-top: 7px;
+  color: var(--scene-white);
+  font-size: .59rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+}
+
+.flight-scene__progress span i { color: var(--scene-gold); font-style: normal; }
+
+.flight-scene__cards {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.flight-scene__card {
+  position: absolute;
+  top: var(--card-y);
+  left: var(--card-x);
+  width: clamp(205px, 21vw, 285px);
+  transform:
+    perspective(1200px)
+    translate(-50%, -50%)
+    translateZ(var(--card-depth))
+    rotateX(var(--card-rx))
+    rotateY(var(--card-ry))
+    rotateZ(var(--card-rz))
+    scale(var(--card-scale));
+  transform-style: preserve-3d;
+  opacity: .88;
+  pointer-events: auto;
+  transition: opacity 280ms ease-out, transform 360ms ease-out, filter 280ms ease-out, width 280ms ease-out;
+}
+
+.flight-scene__card.is-active {
+  opacity: 1;
+  width: clamp(280px, 28vw, 360px);
+  filter: none;
+  transform-style: flat;
+  transform: translate(-50%, -50%);
+}
+
+.flight-scene__card-button {
+  position: relative;
+  display: grid;
+  width: 100%;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: .8rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgb(236 223 198 / 22%);
+  border-radius: 15px;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 14%), rgb(255 255 255 / 4%) 43%, rgb(9 17 26 / 67%)),
+    rgb(8 14 23 / 88%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 19%), 0 18px 48px rgb(0 0 0 / 26%);
+  color: var(--scene-white);
+  font: 600 .9rem/1.4 var(--font-manrope), "Noto Sans", Arial, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: border-color 280ms ease-out, background-color 280ms ease-out, box-shadow 280ms ease-out, padding 280ms ease-out;
+}
+
+.flight-scene__card-button::before {
+  position: absolute;
+  inset: 1px 12px auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 46%), transparent);
+  content: "";
+}
+
+.flight-scene__card-button:focus-visible {
+  outline: 2px solid #f1cf8e;
+  outline-offset: 4px;
+}
+
+.flight-scene__card.is-active .flight-scene__card-button {
+  border-color: rgb(238 193 119 / 86%);
+  background:
+    linear-gradient(145deg, rgb(231 189 119 / 17%), rgb(255 255 255 / 5%) 45%, rgb(9 17 26 / 72%)),
+    rgb(8 14 23 / 94%);
+  box-shadow: inset 0 1px 0 rgb(255 247 225 / 34%), 0 0 24px rgb(231 189 119 / 26%), 0 18px 48px rgb(0 0 0 / 32%);
+}
+
+.flight-scene__card.is-active .flight-scene__card-button {
+  padding: 1.15rem 1.25rem;
+  color: #fffdf7;
+  font-size: .84rem;
+}
+
+.flight-scene__icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgb(231 189 119 / 45%);
+  border-radius: 50%;
+  color: #efd39c;
+}
+
+.flight-scene__icon svg {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.flight-scene__card-index {
+  color: #f0d39d;
+  font-size: .66rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.flight-scene__card-description {
+  grid-column: 2 / -1;
+  display: -webkit-box;
+  overflow: hidden;
+  color: #f4f1e9;
+  font-size: .82rem;
+  font-weight: 400;
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.flight-scene__card.is-active .flight-scene__card-description {
+  font-size: .74rem;
+}
+
+.flight-scene__card-cta {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  place-items: center;
+  border: 1px solid rgb(231 189 119 / 72%);
+  border-radius: 50%;
+  background: rgb(231 189 119 / 11%);
+  color: #f5d79e;
+  font-size: 1.05rem;
+  text-decoration: none;
+}
+
+.flight-scene__card-cta {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: -15px;
+  transform: translateY(-50%);
+}
+
+.flight-scene__card-cta:hover { background: rgb(231 189 119 / 24%); }
+
+.flight-scene__scroll {
+  position: absolute;
+  z-index: 15;
+  bottom: clamp(18px, 4vh, 44px);
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: .5rem .75rem;
+  border: 1px solid rgb(244 241 233 / 26%);
+  border-radius: 999px;
+  background: rgb(5 9 16 / 82%);
+  color: #fff;
+  font-size: .64rem;
+  letter-spacing: .14em;
+  transform: translateX(-50%);
+  transition: opacity 240ms ease-out;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.flight-scene__scroll b {
+  color: var(--scene-gold);
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+.flight-scene__scroll.is-hidden { opacity: 0; }
+
+
+.signature-destination__image--slot {
+  background:
+    radial-gradient(ellipse at 74% 68%, rgb(167 94 46 / 28%), transparent 31%),
+    linear-gradient(180deg, #121b27 0%, #24232a 53%, #10151d 100%);
+}
+
+.signature-destination__image--slot::before {
+  position: absolute;
+  inset: 15% 8%;
+  border: 1px dashed rgb(231 189 119 / 24%);
+  content: "";
+}
+
+.signature-destination__image--slot::after {
+  position: absolute;
+  right: 10%;
+  bottom: 10%;
+  color: rgb(231 189 119 / 60%);
+  content: "MONGOLIAN LANDSCAPE PHOTO SLOT";
+  font: 500 .56rem/1.4 var(--font-manrope), "Noto Sans", Arial, sans-serif;
+  letter-spacing: .16em;
+}
+
+@media (max-width: 980px) {
+  .site:has(.flight-scene) .hdr__nav { gap: .8rem; }
+  .site:has(.flight-scene) .hdr__phone { display: none; }
+  .flight-scene__heading { width: min(43vw, 450px); }
+  .flight-scene__card { width: clamp(190px, 24vw, 245px); }
+  .flight-scene__card.is-active { width: clamp(270px, 34vw, 340px); }
+}
+
+@media (min-width: 761px) and (max-height: 720px) {
+  .flight-scene__heading {
+    top: clamp(100px, 16vh, 125px);
+    width: min(34vw, 420px);
+  }
+
+  .flight-scene__heading h1 { font-size: clamp(2rem, 4vw, 3rem); }
+  .flight-scene__heading > p:last-child { margin-top: .7rem; font-size: .72rem; line-height: 1.55; }
+}
+
+@media (max-width: 760px) {
+  .site:has(.flight-scene) .hdr--over {
+    top: 8px;
+    width: calc(100% - 16px);
+  }
+
+  .site:has(.flight-scene) .hdr__bar { min-height: 56px; padding-inline: 12px; }
+  .site:has(.flight-scene) .hdr__nav { display: none; }
+  .site:has(.flight-scene) .hdr__actions { margin-left: auto; }
+  .site:has(.flight-scene) .hdr__cta { min-height: 38px; padding-inline: .8rem; font-size: .6rem; }
+
+  .flight-scene {
+    height: calc(100svh + (var(--scene-count) - 1) * 44svh);
+    min-height: 680px;
+  }
+
+  .flight-scene__sticky { min-height: 640px; }
+  .flight-scene__heading { top: 14%; left: 9%; width: 82%; padding: 1rem; }
+  .flight-scene__heading .eyebrow { margin-bottom: .65rem; font-size: .62rem; }
+  .flight-scene__heading h1 { max-width: 15ch; font-size: clamp(2rem, 8vw, 3.2rem); }
+  .flight-scene__heading > p:last-child { max-width: 42ch; margin-top: .65rem; font-size: .84rem; }
+
+  .flight-scene__route-caption { top: 10%; font-size: .54rem; }
+  .flight-scene__aircraft-wrap { top: 40%; width: 100vw; height: min(44vh, 360px); }
+  .flight-scene__asset-slots { width: 94%; gap: .3rem; }
+  .flight-scene__asset-slots span { padding: .32rem .48rem; font-size: .52rem; }
+  .flight-scene__progress { left: 10px; gap: 10px; }
+  .flight-scene__progress button { width: 9px; height: 9px; min-width: 9px; min-height: 9px; }
+  .flight-scene__progress span { font-size: .58rem; }
+
+  .flight-scene__card {
+    top: var(--mobile-y, var(--card-y));
+    left: var(--mobile-x, var(--card-x));
+    width: min(44vw, 190px);
+  }
+
+  .flight-scene__card.is-active {
+    top: 58%;
+    left: 50%;
+    width: min(86vw, 340px);
+  }
+
+  .flight-scene__card:nth-child(1) { --mobile-x: 26%; --mobile-y: 49%; }
+  .flight-scene__card:nth-child(2) { --mobile-x: 74%; --mobile-y: 49%; }
+  .flight-scene__card:nth-child(3) { --mobile-x: 50%; --mobile-y: 75%; }
+  .flight-scene__card-button { grid-template-columns: 28px 1fr auto; gap: .45rem; padding: .7rem .62rem; border-radius: 12px; font-size: .76rem; }
+  .flight-scene__icon { width: 28px; height: 28px; }
+  .flight-scene__icon svg { width: 19px; height: 19px; }
+  .flight-scene__card-index { font-size: .57rem; }
+  .flight-scene__card-description { font-size: .7rem; line-height: 1.45; -webkit-line-clamp: 3; }
+  .flight-scene__card-cta { flex-basis: 32px; width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
+  .flight-scene__card.is-active { transform: translate(-50%, -50%); }
+  .flight-scene__card-cta { top: 2px; right: -9px; flex-basis: 30px; width: 30px; height: 30px; min-width: 30px; min-height: 30px; transform: none; }
+  .flight-scene__scroll { bottom: 14px; font-size: .56rem; }
+  .flight-scene__mountain-slot { height: 21%; }
+  .flight-scene__mountain-slot span { right: 14px; bottom: .7rem; padding: .35rem .45rem; font-size: .5rem; }
+  .flight-scene__mountain-slot span:first-child { bottom: 1.45rem; }
+  .flight-scene__mountain-slot span:last-child:not(:first-child) { right: auto; left: 14px; }
+  .flight-scene__cloud-asset { bottom: 12%; height: 25%; }
+  .flight-scene__cloud-asset--2 { bottom: 18%; height: 22%; }
+  .flight-scene__cloud-asset--3 { bottom: 8%; height: 29%; }
+}
+
+@media (max-width: 390px) {
+  .flight-scene__heading { top: 13%; }
+  .flight-scene__heading h1 { font-size: clamp(1.85rem, 8.5vw, 2.3rem); }
+  .flight-scene__heading > p:last-child { font-size: .76rem; }
+  .flight-scene__card { width: min(45vw, 174px); }
+  .flight-scene__card-button { font-size: .68rem; }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .flight-scene__card-button { touch-action: manipulation; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flight-scene *,
+  .flight-scene *::before,
+  .flight-scene *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+.flight-scene.is-low-end .flight-scene__stars,
+.flight-scene.is-low-end .flight-scene__cloud-asset,
+.flight-scene.is-low-end .flight-scene__sunset { display: none; }
+
+.flight-scene.is-low-end .flight-scene__card,
+.flight-scene.is-reduced-motion .flight-scene__card { transition: none; }
+
+.flight-scene.is-low-end .flight-scene__card-button { box-shadow: none; }
+
+.flight-scene.is-reduced-motion .flight-scene__rotor-asset { animation: none; }
+
+@keyframes flight-rotor-spin {
+  to { transform: rotate(360deg); }
+}

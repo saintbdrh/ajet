@@ -9,12 +9,13 @@ import { t, type Locale } from "@/lib/i18n";
 import { adminConfirm, adminStatusText, adminText, cmsFieldText, cmsSectionText } from "@/lib/admin-dictionary";
 import ImagePicker from "@/components/ImagePicker";
 import AdminHistory from "@/components/AdminHistory";
+import { FlightBaselineEditor, FlightCompletionScreen } from "@/components/FlightOperationsAdmin";
 import { defaultMediaSlots, mediaUrl, slotStill, type MediaSlot } from "@/lib/media";
 import { minorToMajor } from "@/lib/money";
 import type { AdminAircraft, AdminDestination, AdminQuote, DispatchAircraft, QuoteHistory, QuoteRevision } from "@/lib/admin-types";
 import type { AdminRole } from "@/lib/admin";
 
-type Tab = "content" | "photos" | "prices" | "aircraft" | "destinations" | "quotes";
+type Tab = "content" | "photos" | "prices" | "aircraft" | "destinations" | "quotes" | "flights";
 type CopyResponse = { values: Record<Locale, Record<string, string>> };
 type ItemsResponse<T> = { items: T[] };
 type AdminPhoto = MediaSlot & { updatedAt?: string; previous?: Partial<MediaSlot> | null; previousRevisionId?: number | null };
@@ -37,6 +38,7 @@ const allTabs: { id: Tab; label: Parameters<typeof adminText>[1] }[] = [
   { id: "aircraft", label: "aircraft" },
   { id: "destinations", label: "destinations" },
   { id: "quotes", label: "quotes" },
+  { id: "flights", label: "flights" },
 ];
 const photoLabels = ["photoHero", "photoMembership", "photoCorporate", "photoJourney1", "photoJourney2", "photoJourney3", "photoJourney4", "photoJourney5", "photoJourney6", "photoJourney7"] as const;
 const blankAircraft = (orderIndex: number): AdminAircraft => ({
@@ -166,7 +168,7 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
         } else if (tab === "destinations") {
           const response = await adminRequest<ItemsResponse<AdminDestination>>("/api/admin/destinations");
           if (active) setDestinations(response.items);
-        } else {
+        } else if (tab === "quotes") {
           const response = await adminRequest<ItemsResponse<AdminQuote> & {
             revisions: QuoteRevision[];
             history: QuoteHistory[];
@@ -570,9 +572,9 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
   }
 
   const tabs = allTabs.filter((item) =>
-    role === "owner" ||
-    (role === "dispatcher" && item.id === "quotes") ||
-    (role === "content_editor" && item.id !== "quotes"),
+    (role === "owner" && (!preview || item.id !== "flights")) ||
+    (!preview && role === "dispatcher" && (item.id === "quotes" || item.id === "flights")) ||
+    (role === "content_editor" && item.id !== "quotes" && item.id !== "flights"),
   );
   const orderedPhotos = [...photos].sort((left, right) =>
     defaultMediaSlots.findIndex((item) => item.key === left.key) -
@@ -589,14 +591,16 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
   const tabDescriptions: Record<Tab, string> = locale === "mn" ? {
     quotes: "Нислэгийн хүсэлт, үнийн санал, баталгаажуулалт.", content: "Вэбсайтын Монгол, Англи текстийг нэг дор засах.",
     photos: "Вэбсайтын зураг болон харагдах хэсгийг удирдах.", prices: "Дотоод үнийн мэдээлэл. Нийтийн вэбсайтад үнэ харуулахгүй.", aircraft: "Нисдэг тэрэгний мэдээлэл, зураг, нийтлэлт.", destinations: "Чиглэл, зураг, байршлын мэдээлэл.",
+    flights: "Баталгаажсан нислэгийг дуусгаж, нийт статистикийг шинэчлэх.",
   } : {
     quotes: "Every journey starts here. Review requests and manage proposals.", content: "Your website, in your words. Edit Mongolian and English together.",
     photos: "Curate the imagery that tells your story.", prices: "Internal price references. Public catalogue pricing is currently withheld.", aircraft: "Aircraft details, photography and publication controls.", destinations: "The places you fly. Manage imagery and destination details.",
+    flights: "Complete confirmed flights and maintain the historical statistics baseline.",
   };
   return (
     <div className="admin-shell admin-workspace">
       <header className="admin-top">
-        <a className="brand" href={`/${locale}`}><span className="brand-mark" aria-hidden="true"><i /></span><span>Ajet<small>{adminText(locale, "admin")}</small></span></a>
+        <a className="brand" href={`/${locale}`}><img src="/img/brand/ajet-logo.svg" width="125" height="38" alt="A-JET Aviation" /><span className="dashboard-brand-label">{adminText(locale, "admin")}</span></a>
         <div className="admin-user">
           <span>{email}</span>
         <label className="admin-language"><span className="sr-only">{adminText(locale, "language")}</span><select aria-label={adminText(locale, "language")} value={locale} onChange={(event) => setLocale(event.target.value as Locale)}><option value="mn">МН</option><option value="en">EN</option></select></label>
@@ -609,8 +613,8 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
         <nav aria-label={adminText(locale, "admin")}>
           {[...tabs].sort((a, b) => (a.id === "quotes" ? -1 : b.id === "quotes" ? 1 : 0)).map((item) => <button type="button" key={item.id} aria-current={tab === item.id ? "page" : undefined} onClick={() => {
             if (tab === "content" && hasUnsavedCopy && !window.confirm(adminText(locale, "contentUnsaved"))) return;
-            setTab(item.id); setQuery(""); setStatusFilter("all"); setNotice("");
-          }}><span className="admin-nav-icon" aria-hidden="true">{({ quotes: "↗", content: "Aa", photos: "▧", prices: "₮", aircraft: "✧", destinations: "◎" })[item.id]}</span>{adminText(locale, item.label)}<span className="admin-nav-arrow" aria-hidden="true">›</span></button>)}
+            setTab(item.id); setQuery(""); setStatusFilter("all"); setServiceFilter("all"); setNotice("");
+          }}><span className="admin-nav-icon" aria-hidden="true">{({ quotes: "↗", content: "Aa", photos: "▧", prices: "₮", aircraft: "✧", destinations: "◎", flights: "⌁" })[item.id]}</span>{adminText(locale, item.label)}<span className="admin-nav-arrow" aria-hidden="true">›</span></button>)}
         </nav>
         <div className="admin-side-bottom"><span className="live-dot" />{adminText(locale, role)}<p>AJET · {locale === "mn" ? "Удирдлагын систем" : "Website & operations"}</p><a href={`/${locale}`} target="_blank" rel="noreferrer">{adminText(locale, "viewHome")} ↗</a></div>
       </aside>
@@ -817,7 +821,7 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
             </section>
           )}
           {tab === "quotes" && (
-            <section className="admin-panel">
+            <section className="admin-panel dashboard-requests">
               <div className="admin-panel-heading"><div><h2>{adminText(locale, "quotes")}</h2><p>{adminText(locale, "manageRequests")}</p></div><span className="admin-count">{quotes.length} {adminText(locale, "recentRequests")}</span></div>
               <div className="request-summary">{[
                 ["requested", locale === "mn" ? "Шинэ хүсэлт" : "New requests"],
@@ -825,9 +829,16 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
                 ["quoted", locale === "mn" ? "Санал илгээсэн" : "Proposals sent"],
                 ["approved", locale === "mn" ? "Зөвшөөрсөн" : "Client approved"],
               ].map(([status, label]) => <button type="button" key={status} aria-pressed={statusFilter === status} onClick={() => setStatusFilter(statusFilter === status ? "all" : status)}><span>{label}</span><strong>{quotes.filter((item) => item.status === status).length.toString().padStart(2, "0")}</strong><span className="summary-arrow" aria-hidden="true">↗</span></button>)}</div>
-              <div className="request-filters" role="group" aria-label={locale === "mn" ? "Төлөвөөр шүүх" : "Filter by status"}>{["all", "requested", "in_review", "quoted", "approved", "confirmed", "declined", "expired", "closed"].map((status) => <button type="button" key={status} aria-pressed={statusFilter === status} onClick={() => setStatusFilter(status)}>{status === "all" ? (locale === "mn" ? "Бүгд" : "All requests") : adminStatusText(locale, status)}</button>)}</div>
-              <label className="request-service-filter">{locale === "mn" ? "Үйлчилгээгээр шүүх" : "Filter by service"}<select value={serviceFilter} onChange={e=>setServiceFilter(e.target.value)}><option value="all">{locale === "mn" ? "Бүх үйлчилгээ" : "All services"}</option>{(["charter","catering","photography"] as const).map(id=><option key={id} value={id}>{serviceName(locale,id)}</option>)}</select><span>{visibleQuotes.length} / {quotes.length}</span></label>
-              {visibleQuotes.length === 0 ? <div className="admin-empty">{query || statusFilter !== "all" ? (locale === "mn" ? "Тохирох хүсэлт олдсонгүй. Хайлтаа өөрчилнө үү." : "No matching requests. Try another search or status.") : adminText(locale, "noRequests")}</div> : <div className="admin-table-wrap"><table className="admin-table">
+              <div className="dashboard-queue">
+                <div><span>{locale === "mn" ? "Дараагийн алхам" : "NEXT ACTION"}</span><h3>{locale === "mn" ? "Хүлээгдэж буй хүсэлтүүд" : "Keep every journey moving."}</h3><p>{locale === "mn" ? "Шинэ хүсэлтийг хянаж, зөвшөөрсөн саналыг баталгаажуулна." : "Review new enquiries and arrange confirmation for client-approved proposals."}</p></div>
+                <button type="button" onClick={() => {setQuery(""); setServiceFilter("all"); setStatusFilter(quotes.some(item => item.status === "requested") ? "requested" : "approved");}}>
+                  {locale === "mn" ? "Анхаарах хүсэлтүүд" : "View requests needing attention"} <span aria-hidden="true">↗</span>
+                </button>
+              </div>
+              <div className="request-filters" role="group" aria-label={locale === "mn" ? "Төлөвөөр шүүх" : "Filter by status"}>{["all", "requested", "in_review", "quoted", "approved", "confirmed", "completed", "declined", "expired", "closed"].map((status) => <button type="button" key={status} aria-pressed={statusFilter === status} onClick={() => setStatusFilter(status)}>{status === "all" ? (locale === "mn" ? "Бүгд" : "All requests") : adminStatusText(locale, status)}</button>)}</div>
+              <label className="request-service-filter">{locale === "mn" ? "Үйлчилгээгээр шүүх" : "Filter by service"}<select value={serviceFilter} onChange={e=>setServiceFilter(e.target.value)}><option value="all">{locale === "mn" ? "Бүх үйлчилгээ" : "All services"}</option>{(["charter","catering","photography"] as const).map(id=><option key={id} value={id}>{serviceName(locale,id)}</option>)}</select><span role="status">{visibleQuotes.length} / {quotes.length}</span></label>
+              {(query || statusFilter !== "all" || serviceFilter !== "all") && <button className="admin-link dashboard-clear" type="button" onClick={() => {setQuery("");setStatusFilter("all");setServiceFilter("all");}}>{locale === "mn" ? "Шүүлтүүр цэвэрлэх" : "Clear filters"}</button>}
+              {visibleQuotes.length === 0 ? <div className="admin-empty">{query || statusFilter !== "all" || serviceFilter !== "all" ? (locale === "mn" ? "Тохирох хүсэлт олдсонгүй. Хайлтаа өөрчилнө үү." : "No matching requests. Try another search or status.") : adminText(locale, "noRequests")}</div> : <div className="admin-table-wrap"><table className="admin-table">
                 <thead><tr><th>{adminText(locale, "request")}</th><th>{adminText(locale, "routeAndDate")}</th><th>{adminText(locale, "contact")}</th><th>{adminText(locale, "passengers")}</th><th>{adminText(locale, "workflow")}</th></tr></thead>
                 <tbody>{visibleQuotes.map((item) => {
                   const quoteRevisions = revisions.filter((revision) => revision.quote_id === item.id);
@@ -836,11 +847,11 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
                   return (
                     <Fragment key={item.id}>
                       <tr>
-                        <td><strong>{item.name}</strong><small>{item.id}</small><small>{item.created_at}</small>{item.notes && <p>{item.notes}</p>}<RequestWorkspace id={item.id} locale={locale} preview={preview} email={email}/></td>
-                        <td>{item.origin} → {item.destination}<small>{item.flight_date}{item.flight_time && ` · ${item.flight_time}`}{item.round_trip ? ` · ${adminText(locale, "return")}` : ""}</small></td>
-                        <td>{item.name}<small><a href={`tel:${item.phone}`}>{item.phone}</a></small>{item.email && <small><a href={`mailto:${item.email}`}>{item.email}</a></small>}</td>
-                        <td><small>{serviceName(locale, item.service ?? "charter")}</small>{item.passengers}<small>{item.service === "charter" || !item.service ? (locale === "mn" ? "зорчигч" : "passengers") : (locale === "mn" ? "зочин / оролцогч" : "guests / participants")}</small></td>
-                        <td>
+                        <td data-label={adminText(locale, "request")}><strong>{item.name}</strong><small>{item.id}</small><small>{new Intl.DateTimeFormat(locale === "mn" ? "mn-MN" : "en-GB", { dateStyle: "medium", timeZone: "Asia/Ulaanbaatar" }).format(new Date(item.created_at))}</small>{item.notes && <p>{item.notes}</p>}<RequestWorkspace id={item.id} locale={locale} preview={preview} email={email}/></td>
+                        <td data-label={adminText(locale, "routeAndDate")}>{item.origin} → {item.destination}<small>{item.flight_date}{item.flight_time && ` · ${item.flight_time}`}{item.round_trip ? ` · ${adminText(locale, "return")}` : ""}</small></td>
+                        <td data-label={adminText(locale, "contact")}>{item.name}<small><a href={`tel:${item.phone}`}>{item.phone}</a></small>{item.email && <small><a href={`mailto:${item.email}`}>{item.email}</a></small>}</td>
+                        <td data-label={adminText(locale, "passengers")}><small>{serviceName(locale, item.service ?? "charter")}</small>{item.passengers}<small>{item.service === "charter" || !item.service ? (locale === "mn" ? "зорчигч" : "passengers") : (locale === "mn" ? "зочин / оролцогч" : "guests / participants")}</small></td>
+                        <td data-label={adminText(locale, "workflow")}>
                           <strong className={`request-status status-${item.status}`}>{adminStatusText(locale, item.status)}</strong>
                           {item.status === "requested" && <button type="button" className="admin-link" disabled={busy} onClick={() => void quoteAction({ action: "review", id: item.id })}>{adminText(locale, "startReview")}</button>}
                           {(item.status === "in_review" || item.status === "quoted") && (
@@ -915,6 +926,12 @@ export default function AdminDashboard({ email, role, logoutUrl, preview = false
                 })}</tbody>
               </table></div>}
             </section>
+          )}
+          {tab === "flights" && (
+            <div className="flight-operations-stack">
+              <FlightCompletionScreen locale={locale} />
+              {role === "owner" && <FlightBaselineEditor locale={locale} />}
+            </div>
           )}
         </>}
       </main>

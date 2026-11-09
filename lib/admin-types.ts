@@ -38,7 +38,7 @@ export type AdminDestination = {
 };
 
 export type QuoteStatus =
-  | "requested" | "in_review" | "quoted" | "approved" | "confirmed"
+  | "requested" | "in_review" | "quoted" | "approved" | "confirmed" | "completed"
   | "declined" | "expired" | "closed";
 
 export type AdminQuote = {

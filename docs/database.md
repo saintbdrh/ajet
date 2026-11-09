@@ -1,6 +1,6 @@
 # Database
 
-Postgres. Schema: `migrations/0001_initial_schema.sql` + `0002_media_assets.sql`. Applied by `npm run db:migrate` (tracked in `schema_migrations`).
+Postgres. Schema migrations are applied by `npm run db:migrate` and tracked in `schema_migrations`.
 
 Conventions:
 - Yes/no flags are `INTEGER` 0/1 with a `CHECK`, not `BOOLEAN`.
@@ -20,6 +20,7 @@ erDiagram
     quotes ||--o{ quote_revisions : "has"
     quotes ||--o{ quote_status_history : "logs"
     quotes ||--o{ quote_notification_attempts : "logs"
+    quotes ||--o{ flight_legs : "records"
 
     aircraft {
         text id PK
@@ -142,6 +143,40 @@ erDiagram
         int succeeded
         timestamptz attempted_at
     }
+    flight_legs {
+        text id PK
+        text quote_id FK
+        int leg_order
+        text origin
+        text destination
+        numeric planned_km
+        numeric actual_km
+        int block_minutes
+        int pax
+        timestamptz completed_at
+    }
+    stats_baseline {
+        int id PK
+        numeric total_km
+        numeric total_hours
+        bigint total_flights
+        date as_of
+    }
+```
+
+`0006_total_km_stats.sql` adds the WGS-84 mean-radius `haversine_km` helper, historical baseline, completed-leg stats view and audited leg/baseline tables. It backfills planned legs for existing charter requests (including return legs), using only unique published destinations with verified coordinates. Missing or ambiguous coordinates leave `planned_km` null. The exact stats predicate is `legs.completed_at IS NOT NULL AND booking.status = 'completed' AND booking.service = 'charter'`; distance uses `COALESCE(actual_km, planned_km)`, and each matching leg contributes one flight. Accepted, confirmed, declined, expired and closed bookings are not counted; there is no separate `cancelled` status in the current quote status constraint. RLS denies direct anonymous table access; staff APIs set transaction-scoped roles, and the public endpoint reads only the aggregate view.
+
+The app's `closed` status is treated as cancellation for stats; each completed route leg counts as one flight, so round trips count twice. A route without a unique published, coordinate-verified destination match is retained with a null planned distance until operations records the actual distance.
+
+To reverse just this feature, run `npm run db:rollback:stats`. This removes flight-leg and baseline data and reverts bookings marked completed to confirmed; export the stats and review affected bookings before rollback.
+
+Run integration checks against a disposable migrated Postgres database whose database name includes `test`:
+
+```powershell
+$env:TEST_DATABASE_URL = "postgres://.../ajet_test"
+$env:DATABASE_URL = $env:TEST_DATABASE_URL
+npm run db:migrate
+npm run test:total-km
 ```
 
 Tables with no foreign keys (linked by convention only):

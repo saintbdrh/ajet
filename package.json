@@ -18,6 +18,8 @@
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
+    "db:rollback:stats": "node --env-file-if-exists=.env.local scripts/rollback-total-km.mjs",
+    "test:total-km": "node scripts/test-total-km.mjs",
     "storage:setup": "node --env-file-if-exists=.env.local scripts/storage-setup.mjs"
   },
   "keywords": [],

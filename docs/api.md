@@ -1,6 +1,6 @@
 # Pages and API endpoints
 
-All API responses are JSON with `ok: boolean`. Errors carry `error` (admin and quote intake) or `code` (quote decision).
+API responses are JSON. Most use `ok: boolean`; `/api/stats` is the specified public stats shape, and errors use `error` (admin and quote intake) or `code` (quote decision).
 
 ## Endpoint map
 
@@ -14,6 +14,7 @@ flowchart LR
         P5["GET /{locale}/quote/response#token"]
         A1["POST /api/quote"]
         A2["POST /api/quote/decision"]
+        P6["GET /api/stats"]
         M1["GET /media/uploads/{file}"]
     end
     subgraph staff[Staff — Cloudflare Access + role]
@@ -29,6 +30,11 @@ flowchart LR
         end
         subgraph di[dispatcher]
             D1["/api/admin/quotes<br/>GET · POST · PATCH"]
+            D2["/api/staff/bookings<br/>GET"]
+            D3["/api/staff/bookings/{id}/complete<br/>POST"]
+        end
+        subgraph ow[owner]
+            O1["/api/stats/baseline<br/>GET · PUT (owner)"]
         end
     end
     P4 --> A1
@@ -69,6 +75,17 @@ flowchart LR
 | GET | `/api/admin/quotes` | dispatcher | Requests, revisions, history, aircraft, prices (expires stale quotes first) |
 | POST | `/api/admin/quotes` | dispatcher | Create and email a quote revision |
 | PATCH | `/api/admin/quotes` | dispatcher | Review, close, or confirm a request |
+| GET | `/api/stats` | public | Cached total completed-flight statistics |
+| GET | `/api/staff/bookings` | dispatcher | List confirmed and completed charter bookings with legs |
+| POST | `/api/staff/bookings/{id}/complete` | dispatcher | Complete a booking or correct completed leg measurements |
+| GET | `/api/stats/baseline` | owner | Read historical totals and their as-of date |
+| PUT | `/api/stats/baseline` | owner | Replace the historical totals and as-of date |
+
+`GET /api/stats` returns `{ total_km, total_hours, total_flights, as_of }` with `Cache-Control: public, s-maxage=300, stale-while-revalidate=3600`. Totals include the owner-entered baseline and only legs on completed charter bookings with `completed_at IS NOT NULL`; distance is `COALESCE(actual_km, planned_km)`, and flight count is per leg. Quote approval/confirmation never adds to the totals. Repeated completion with unchanged values is idempotent; corrections to completed legs are audit logged.
+
+`POST /api/staff/bookings/{id}/complete` accepts `{ legs: [{ id, actual_km, block_minutes, pax }] }` and requires values for every stored leg. A second confirmation step is required in the admin UI. The booking must already be confirmed or completed. Staff role is additionally applied to Postgres RLS transaction settings.
+
+Assumptions: this app's `closed` status represents cancelled bookings; each counted flight is a completed leg (a round trip counts as two); only uniquely matched published destinations with verified coordinates are used to calculate planned distances; other planned distances remain null.
 
 ---
 

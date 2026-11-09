@@ -22,6 +22,12 @@ export default async function Quote({ params, searchParams }: { params: Promise<
   const route = query.service === "airport-express" ? expressItinerary(locale, typeof query.site === "string" ? query.site : "", typeof query.direction === "string" ? query.direction : "") : undefined;
   const plannedRoute = query.service === "charter" ? plannerEnquiry(query, locale, fleet.filter((a) => !a.placeholder)) : undefined;
   const lake = query.tour === "khagiin-khar" && query.service === "charter" ? lakeEnquiry(locale, query.via) : undefined;
+  const requestedDestination = typeof query.destination === "string"
+    ? query.destination.replace(/[\u0000-\u001f]/g, "").trim()
+    : "";
+  const destinationRoute = requestedDestination.length >= 2 && requestedDestination.length <= 120
+    ? { from: "", to: requestedDestination }
+    : undefined;
   const journey = journeyCopy[locale];
   const initialService = isServiceId(query.service) ? query.service : "charter";
   const initialExtras = query.extras === "transfers" ? ["transfers" as const] : [];
@@ -61,7 +67,7 @@ export default async function Quote({ params, searchParams }: { params: Promise<
               initialExtras={initialExtras}
               d={d.form}
               locale={locale}
-              initialRoute={route ? { ...route, notes: experienceCopy[locale].expressName } : lake ?? plannedRoute}
+              initialRoute={route ? { ...route, notes: experienceCopy[locale].expressName } : lake ?? plannedRoute ?? destinationRoute}
               places={[...new Set([...dest.map((p) => p.name[locale]), experienceCopy[locale].airport, ...expressSites.map((p) => p[locale])])]}
               aircraft={fleet.filter((item) => !item.placeholder).map((item) => item.name)}
             />

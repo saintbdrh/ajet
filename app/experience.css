@@ -1,29 +1,29 @@
 /* Studio and passenger experiences. All controls stay outside the aircraft viewport. */
-.site .brand-hero__window--studio { border-radius: 20px; background: #020609; height: clamp(380px, 40vw, 590px); }
+.site .brand-hero__window--studio { border-radius: 20px; background: var(--ajet-black); height: clamp(380px, 40vw, 590px); }
 .site .brand-hero__studio-film { width: 100%; height: 100%; object-fit: contain; }
-.site .hero-film-control { position: absolute; top: 1rem; right: 1rem; z-index: 2; min-height: 44px; padding: .6rem 1rem; border: 1px solid #ffffff33; border-radius: 30px; background: #02060999; color: white; font: 500 .65rem var(--sans); cursor: pointer; }
+.site .hero-film-control { position: absolute; top: 1rem; right: 1rem; z-index: 2; min-height: 44px; padding: .6rem 1rem; border: 1px solid rgb(255 255 255 / 20%); border-radius: 30px; background: rgb(0 0 0 / 60%); color: white; font: 500 .65rem var(--sans); cursor: pointer; }
 .site .hdr__explore { position: relative; }
 .site .hdr__explore summary { list-style: none; display: flex; align-items: center; gap: .8rem; min-height: 44px; cursor: pointer; font-size: .68rem; letter-spacing: .07em; text-transform: uppercase; }
 .site .hdr__explore summary::-webkit-details-marker { display: none; }
 .site .hdr__explore summary span { color: var(--champ); font-size: 1rem; }
-.site .hdr__explore > div { position: absolute; right: 0; top: calc(100% + .7rem); min-width: 275px; display: grid; padding: 1rem; border: 1px solid var(--rule); background: #022636; box-shadow: 0 20px 50px #0006; }
+.site .hdr__explore > div { position: absolute; right: 0; top: calc(100% + .7rem); min-width: 275px; display: grid; padding: 1rem; border: 1px solid var(--rule); background: #022636; box-shadow: 0 20px 50px rgb(0 0 0 / 40%); }
 .site .hdr__explore > div a { display: flex; justify-content: space-between; gap: 2rem; padding: .8rem; min-height: 44px; }
 .site .hdr__explore > div a span { color: var(--champ); }
 .site .hdr__explore > div a::after { display: none; }
-.site .hdr__explore > div a:hover { background: #ffffff09; }
+.site .hdr__explore > div a:hover { background: rgb(255 255 255 / 4%); }
 .site .hdr__drawer a:not(.btn) { min-height: 48px; }
-.site .studio-viewer { background: #020609; border-color: #ffffff1a; isolation: isolate; overflow: hidden; margin-bottom: 0; }
+.site .studio-viewer { background: var(--ajet-black); border-color: rgb(255 255 255 / 10%); isolation: isolate; overflow: hidden; margin-bottom: 0; }
 .site .studio-viewer .portrait-meta { color: #a9bdc8; padding: 1rem 1.5rem; }
-.site .studio-stage { position: relative; width: 100%; height: clamp(360px, 47vw, 660px); background: #020609; overflow: hidden; isolation: isolate; }
+.site .studio-stage { position: relative; width: 100%; height: clamp(360px, 47vw, 660px); background: var(--ajet-black); overflow: hidden; isolation: isolate; }
 .site .studio-poster, .site .studio-film { width: 100%; height: 100%; object-fit: contain; display: block; }
 .site .studio-live, .site .studio-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .site .studio-canvas canvas { width: 100%; height: 100%; display: block; touch-action: pan-y; }
 .site .studio-live { transition: opacity .6s ease; }
 .site .studio-viewer [hidden] { display: none !important; }
-.site .studio-loading { position: absolute; bottom: 1.5rem; left: 1.5rem; color: #c7d4da; padding: .6rem 1rem; background: #020609cc; border-radius: 2rem; font-size: .75rem; }
-.site .studio-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .8rem; border-top: 1px solid #ffffff1a; padding: 1rem 1.5rem; }
+.site .studio-loading { position: absolute; bottom: 1.5rem; left: 1.5rem; color: var(--ajet-grey); padding: .6rem 1rem; background: rgb(0 0 0 / 80%); border-radius: 2rem; font-size: .75rem; }
+.site .studio-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .8rem; border-top: 1px solid rgb(255 255 255 / 10%); padding: 1rem 1.5rem; }
 .site .studio-views, .site .studio-tools { display: flex; flex-wrap: wrap; gap: .4rem; }
-.site .studio-viewer button { min-width: 44px; min-height: 44px; padding: .6rem .9rem; border: 1px solid #ffffff26; background: transparent; color: #d9e5ec; font: 600 .68rem/1.4 var(--sans); cursor: pointer; border-radius: 3px; }
+.site .studio-viewer button { min-width: 44px; min-height: 44px; padding: .6rem .9rem; border: 1px solid rgb(255 255 255 / 15%); background: transparent; color: #d9e5ec; font: 600 .68rem/1.4 var(--sans); cursor: pointer; border-radius: 3px; }
 .site .studio-viewer button:hover { border-color: var(--champ); color: white; }
 .site .studio-viewer button[aria-pressed="true"] { background: var(--champ); color: #022636; border-color: var(--champ); }
 .site .studio-viewer button:disabled { opacity: .4; cursor: default; }
@@ -31,14 +31,14 @@
 .site .studio-caption p { max-width: 68ch; font-size: .7rem; color: #9eb5c3; line-height: 1.7; }
 .site .studio-caption > div { display: flex; gap: .5rem; }
 .site .studio-caption button { border-color: transparent; padding-inline: .3rem; color: var(--champ); }
-.site .studio-viewer:fullscreen { display: flex; flex-direction: column; width: 100%; height: 100dvh; margin: 0; background: #020609; border: 0; }
+.site .studio-viewer:fullscreen { display: flex; flex-direction: column; width: 100%; height: 100dvh; margin: 0; background: var(--ajet-black); border: 0; }
 .site .studio-viewer:fullscreen .studio-stage { flex: 1; height: auto; min-height: 0; }
 .site .studio-viewer:fullscreen .portrait-meta, .site .studio-viewer:fullscreen .studio-controls, .site .studio-viewer:fullscreen .studio-caption { flex: none; }
 .site .experience-head h1 { max-width: 19ch; }
 .site .experience-head .eyebrow { max-width: 65ch; }
 .site .experience-head .lede { max-width: 57ch; margin-top: 1.8rem; }
 .site .experience-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; margin-top: 3rem; }
-.site .experience-cards > a { display: flex; flex-direction: column; background: #032e40; border: 1px solid var(--rule-soft); overflow: hidden; transition: border-color .3s, transform .3s; }
+.site .experience-cards > a { display: flex; flex-direction: column; background: var(--ajet-space); border: 1px solid var(--rule-soft); overflow: hidden; transition: border-color .3s, transform .3s; }
 .site .experience-cards > a:hover { border-color: var(--champ); transform: translateY(-4px); }
 .site .experience-cards img { width: 100%; height: 240px; object-fit: cover; transition: transform .6s ease; }
 .site .experience-cards > a:hover img { transform: scale(1.025); }
@@ -56,7 +56,7 @@
 .site .express-direction button { min-height: 50px; padding: .8rem; background: transparent; border: 1px solid var(--rule); border-radius: 4px; font: 600 .8rem/1.4 var(--sans); color: var(--paper); cursor: pointer; }
 .site .express-direction button[aria-pressed="true"] { background: white; color: #022636; border-color: white; }
 .site .express-select { display: grid; gap: .6rem; font-size: .8rem; color: var(--paper-dim); }
-.site .express-select select { min-height: 52px; width: 100%; padding: .8rem; font: 400 .9rem var(--sans); background: #032e40; color: white; border: 1px solid var(--rule); border-radius: 4px; }
+.site .express-select select { min-height: 52px; width: 100%; padding: .8rem; font: 400 .9rem var(--sans); background: var(--ajet-space); color: white; border: 1px solid var(--rule); border-radius: 4px; }
 .site .express-route { padding-block: 2.5rem; }
 .site .express-route > div { display: grid; grid-template-columns: 30px 1fr; gap: 1rem; align-items: start; }
 .site .express-route > div > span { padding-top: .3rem; font-size: .65rem; color: var(--champ); }
@@ -84,7 +84,7 @@
 .site .career-form h2 { font-size: 1.8rem; }
 .site .career-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
 .site .career-form label { display: grid; gap: .55rem; min-width: 0; font-size: .8rem; color: var(--paper-dim); }
-.site .career-form input:not([type="checkbox"]), .site .career-form select, .site .career-form textarea { width: 100%; min-width: 0; min-height: 48px; padding: .8rem; color: white; background: #032e40; border: 1px solid var(--rule); border-radius: 4px; font: 400 .95rem/1.5 var(--sans); }
+.site .career-form input:not([type="checkbox"]), .site .career-form select, .site .career-form textarea { width: 100%; min-width: 0; min-height: 48px; padding: .8rem; color: white; background: var(--ajet-space); border: 1px solid var(--rule); border-radius: 4px; font: 400 .95rem/1.5 var(--sans); }
 .site .career-form textarea { resize: vertical; }
 .site .career-form label.career-consent { display: flex; align-items: flex-start; gap: .8rem; }
 .site .career-consent input { margin: .2rem 0 0; width: 18px; height: 18px; flex: none; accent-color: var(--champ); }

@@ -8,6 +8,7 @@ export default function StudioHero({ locale }: { locale: Locale }) {
   const userPaused = useRef(false);
   useEffect(() => {
     const element = video.current; if (!element) return;
+    element.playbackRate = 0.65;
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const stop = () => { element.pause(); setPlaying(false); };
     const change = () => { if (media.matches) stop(); };

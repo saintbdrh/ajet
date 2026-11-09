@@ -1,11 +1,10 @@
 import { publicSiteUrl } from "@/lib/site-url";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import "@fontsource/noto-sans/latin-400.css";
-import "@fontsource/noto-sans/latin-600.css";
-import "@fontsource/noto-sans/cyrillic-400.css";
-import "@fontsource/noto-sans/cyrillic-600.css";
 import type { ReactNode } from "react";
+import { manrope } from "@/lib/fonts";
+import "@fontsource/noto-serif/500.css";
+import "../tokens.css";
 import "../globals.css";
 import "../site.css";
 import "../brand.css";
@@ -14,12 +13,10 @@ import "../journey.css";
 import "../immersive-hero.css";
 import "../planner.css";
 import "../signature.css";
-import "@fontsource/manrope/latin-400.css";
-import "@fontsource/manrope/latin-600.css";
-import "@fontsource/manrope/latin-800.css";
-import "@fontsource/manrope/cyrillic-400.css";
-import "@fontsource/manrope/cyrillic-600.css";
-import "@fontsource/manrope/cyrillic-800.css";
+import "../homepage.css";
+import "../flight-scene.css";
+import "../public-glass.css";
+import "../studio-return.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ScrollMotion from "@/components/ScrollMotion";
@@ -59,7 +56,7 @@ export default async function RootLayout({ children, params }: { children: React
   const email = isReal(rawEmail) ? rawEmail : undefined;
 
   return (
-    <html lang={locale} data-scroll-behavior="smooth">
+    <html lang={locale} data-scroll-behavior="smooth" className={manrope.variable}>
       <body className="site">
         <div id="top" />
         <a className="skip-link" href="#main-content">{locale === "mn" ? "Үндсэн агуулга руу" : "Skip to content"}</a>

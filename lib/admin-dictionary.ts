@@ -14,6 +14,7 @@ export const adminDictionary = {
     aircraft: "Нисдэг тэрэг",
     destinations: "Чиглэл",
     quotes: "Нислэгийн хүсэлт",
+    flights: "Нислэг",
     save: "Хадгалах",
     saving: "Хадгалж байна…",
     saved: "Өөрчлөлт хадгалагдлаа.",
@@ -194,6 +195,7 @@ export const adminDictionary = {
     aircraft: "Aircraft",
     destinations: "Destinations",
     quotes: "Flight requests",
+    flights: "Flights",
     save: "Save",
     saving: "Saving…",
     saved: "Your changes have been saved.",
@@ -372,7 +374,7 @@ export function adminText(locale: Locale, key: AdminCopyKey): string {
 export function adminStatusText(locale: Locale, status: string): string {
   const mn: Record<string, string> = {
     requested: "Шинэ хүсэлт", in_review: "Хянаж байна", quoted: "Үнийн санал илгээсэн",
-    approved: "Зөвшөөрсөн", confirmed: "Баталгаажсан", declined: "Татгалзсан",
+    approved: "Зөвшөөрсөн", confirmed: "Баталгаажсан", completed: "Дууссан", declined: "Татгалзсан",
     expired: "Хугацаа дууссан", closed: "Хаасан", draft: "Ноорог", sent: "Илгээсэн",
     superseded: "Шинэ хувилбараар солигдсон",
   };

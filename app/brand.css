@@ -1,26 +1,39 @@
 /* A-JET visual identity, October 2026. Public site only. */
 .site {
-  --ink: #022636;
-  --ink-2: #032e40;
-  --ink-3: #0b3545;
-  --ink-4: #154151;
-  --paper: #ffffff;
-  --paper-dim: #c7d4da;
-  --paper-faint: #a2b8c2;
-  --champ: #ddba9e;
-  --champ-bright: #edd4c0;
-  --champ-deep: #b68e6e;
+  --ink: var(--ajet-space);
+  --ink-2: var(--ajet-space);
+  --ink-3: var(--ajet-space);
+  --ink-4: var(--ajet-space);
+  --paper: var(--ajet-white);
+  --paper-dim: var(--ajet-grey);
+  --paper-faint: var(--ajet-grey);
+  --champ: var(--ajet-gold);
+  --champ-bright: var(--ajet-gold);
+  --champ-deep: var(--ajet-gold);
   --rule: rgb(224 224 224 / 22%);
   --rule-soft: rgb(224 224 224 / 12%);
-  --sans: "Manrope", "Noto Sans", Arial, sans-serif;
-  --display: "Benzin", "Manrope", "Noto Sans", Arial, sans-serif;
-  --gold: #ddba9e;
-  --gold2: #edd4c0;
-  --muted: #c7d4da;
-  --faint: #a2b8c2;
+  --sans: var(--ajet-font-body);
+  --display: var(--ajet-font-display);
+  --gold: var(--ajet-gold);
+  --gold2: var(--ajet-gold);
+  --muted: var(--ajet-grey);
+  --faint: var(--ajet-grey);
   color-scheme: dark;
 }
-.site h1, .site h2, .site h3 { font-family: var(--display); font-weight: 600; letter-spacing: -.045em; }
+/* VI: Benzin, wide and uppercase. Tracking is positive, never condensed. */
+.site h1, .site h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: var(--ajet-tracking-display);
+  line-height: 1.04;
+  text-transform: uppercase;
+}
+.site h3 {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
 .site .brand-logo { width: 138px; height: auto; }
 .site .hdr__bar { padding-block: 1.6rem; }
 .site .hdr:not(.hdr--over), .site .hdr.is-scrolled, .site .hdr.is-open { background: rgb(2 38 54 / 96%); }
@@ -36,7 +49,7 @@
 .site .brand-hero { background: #022636; min-height: min(920px, 100svh); justify-content: center; padding-top: 100px; }
 .site .brand-hero .hero__inner { display: grid; grid-template-columns: 1fr 1.03fr; align-items: center; gap: 3rem; padding-block: 3.5rem 4rem; }
 .site .brand-hero__copy { position: relative; z-index: 2; }
-.site .brand-hero h1 { font-size: clamp(3rem, 5.6vw, 5.8rem); font-weight: 800; line-height: 1.04; letter-spacing: -.055em; text-transform: uppercase; max-width: 12ch; }
+.site .brand-hero h1 { font-size: clamp(3rem, 5.6vw, 5.8rem); font-weight: 800; line-height: 1.02; letter-spacing: var(--ajet-tracking-display); text-transform: uppercase; max-width: 12ch; }
 .site .brand-hero .hero__sub { max-width: 38ch; font-size: 1rem; color: var(--paper-dim); }
 .site .brand-hero .hero__actions { align-items: center; gap: 1.5rem; }
 .site .brand-hero .hero__actions .link-arrow { font-size: .64rem; letter-spacing: .06em; padding-block: .8rem; }
@@ -51,26 +64,26 @@
 
 .site .brand-story { background: #ffffff; color: #022636; color-scheme: light; }
 .site .brand-story__intro { display: grid; grid-template-columns: .65fr 1.8fr .35fr; gap: 2rem; align-items: start; padding-bottom: 4rem; }
-.site .brand-story .eyebrow { color: #526872; padding-top: .5rem; }
+.site .brand-story .eyebrow { color: var(--ajet-ink-70); padding-top: .5rem; }
 .site .brand-story h2 { font-size: clamp(2rem, 3.6vw, 3.5rem); max-width: 18ch; }
-.site .brand-story .lede { color: #526872; max-width: 48ch; margin-top: 1.5rem; }
+.site .brand-story .lede { color: var(--ajet-ink-70); max-width: 48ch; margin-top: 1.5rem; }
 .site .brand-story__symbol { justify-self: end; filter: brightness(0) saturate(100%) invert(11%) sepia(30%) saturate(1950%) hue-rotate(156deg); }
 .site .brand-values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3rem; }
-.site .brand-values article { padding-top: 1.5rem; border-top: 1px solid #cbd4d8; }
-.site .brand-values__index { font-size: .65rem; letter-spacing: .15em; color: #526872; }
+.site .brand-values article { padding-top: 1.5rem; border-top: 1px solid var(--ajet-grey); }
+.site .brand-values__index { font-size: .65rem; letter-spacing: .15em; color: var(--ajet-ink-70); }
 .site .brand-values h3 { margin-top: 1.7rem; margin-bottom: 1rem; font-size: 1.25rem; }
-.site .brand-values p { font-size: .9rem; line-height: 1.8; color: #526872; max-width: 36ch; }
+.site .brand-values p { font-size: .9rem; line-height: 1.8; color: var(--ajet-ink-70); max-width: 36ch; }
 .site .section--alt { background: var(--ink-2); }
 .site .section--fleet { background: #022636; }
 .site .svc__index, .site .acft__index { color: var(--champ); }
-.site .aircraft-portrait { background: #032e40; }
+.site .aircraft-portrait { background: var(--ajet-space); }
 .site .about__media { border-radius: 36% 4% 4% 4%; }
-.site .cta { background: #032e40; position: relative; isolation: isolate; overflow: hidden; }
+.site .cta { background: var(--ajet-space); position: relative; isolation: isolate; overflow: hidden; }
 .site .cta::after { content: ""; position: absolute; right: -3rem; top: 10%; width: min(40vw, 470px); height: 80%; background: url('/img/brand/ajet-symbol.svg') center / contain no-repeat; opacity: .04; pointer-events: none; z-index: -1; }
-.site .foot { background: #011d2a; }
+.site .foot { background: var(--ajet-black); }
 .site .foot__wordmark .brand-logo { width: 170px; }
 .site .foot__creds:empty, .site .about__facts:empty { display: none; }
-.site .hero__creds { background: #032e40; }
+.site .hero__creds { background: var(--ajet-space); }
 
 @media (min-width: 1600px) { .site .brand-hero { min-height: 900px; } }
 @media (max-width: 1100px) {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { extraIds, journeyCopy, serviceIds, serviceName } from "@/lib/journey";
 import { getCloudflareEnv } from "@/lib/cloudflare";
 import { getDatabase, type Database } from "@/lib/db";
+import { createPlannedLegs } from "@/lib/flight-stats";
 
 export const runtime = "nodejs";
 
@@ -174,8 +175,12 @@ export async function POST(request: Request) {
     quoteId = `Q-${d.date.replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     const note = combinedNote;
     try {
-      await db.batch([
-        db.prepare(
+      const legs = d.service === "charter"
+        ? await createPlannedLegs(db, d.from, d.to, Boolean(d.roundTrip))
+        : [];
+      await db.transaction(async (tx) => {
+        await tx.prepare("SELECT set_config('app.staff_role', 'system', true), set_config('app.actor_email', 'system', true)").run();
+        await tx.prepare(
           `INSERT INTO quotes (
             id, idempotency_key, request_hash, locale, name, phone, email, organization,
             origin, destination, round_trip, flight_date, flight_time, passengers, notes, service, extras
@@ -183,11 +188,17 @@ export async function POST(request: Request) {
         ).bind(
           quoteId, d.idempotencyKey, requestHash, d.locale, d.name, d.phone, d.email ?? "",
           d.org ?? "", d.from, d.to, d.roundTrip ? 1 : 0, d.date, d.time ?? "", d.pax, note, d.service, JSON.stringify(d.extras),
-        ),
-        db.prepare(
+        ).run();
+        await tx.prepare(
           "INSERT INTO quote_status_history (quote_id, from_status, to_status, actor, note) VALUES (?, NULL, 'requested', 'client', 'Request received.')",
-        ).bind(quoteId),
-      ]);
+        ).bind(quoteId).run();
+        for (const leg of legs) {
+          await tx.prepare(
+            `INSERT INTO flight_legs (id, quote_id, leg_order, origin, destination, planned_km)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+          ).bind(leg.id, quoteId, leg.legOrder, leg.origin, leg.destination, leg.plannedKm).run();
+        }
+      });
     } catch (error) {
       // A concurrent submit with the same idempotency key may have won the insert.
       const duplicate = await db.prepare(

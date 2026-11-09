@@ -41,6 +41,7 @@ export default function SiteFooter({
               <li><Link href={`/${locale}/about`}>{d.nav.about}</Link></li>
               <li><Link href={`/${locale}/helipads`}>{d.nav.helipads}</Link></li>
               <li><Link href={`/${locale}/destinations`}>{locale === "mn" ? "Аялал маршрут" : "Tour itineraries"}</Link></li>
+              <li><Link href={`/${locale}/faq`}>{locale === "mn" ? "Асуулт, хариулт" : "Frequently asked questions"}</Link></li>
             </ul>
           </nav>
 

@@ -1,0 +1,40 @@
+/* ==========================================================================
+   A-JET — design tokens
+   Single source of truth for the October 2026 visual identity.
+   The four primary colours and three secondary colours below are the only
+   brand colours permitted in the public UI. Everything else is an alpha
+   derivation of those seven values.
+   ========================================================================== */
+
+:root {
+  /* Primary — VI p.14 */
+  --ajet-space: #022636;
+  --ajet-black: #000000;
+  --ajet-grey: #e0e0e0;
+  --ajet-white: #ffffff;
+
+  /* Secondary — VI p.14 */
+  --ajet-dark: #272727;
+  --ajet-sky: #2e7dac;
+  --ajet-gold: #ddba9e; /* rare accent only */
+
+  /* Functional only — validation and error states, never decorative */
+  --ajet-danger: #a04024;
+
+  /* Derived alphas — never new hues */
+  --ajet-ink-70: rgb(2 38 54 / 70%);
+  --ajet-ink-55: rgb(2 38 54 / 55%);
+  --ajet-paper-72: rgb(255 255 255 / 72%);
+  --ajet-paper-56: rgb(255 255 255 / 56%);
+  --ajet-line-dark: rgb(224 224 224 / 18%);
+  --ajet-line-light: rgb(2 38 54 / 14%);
+
+  /* Type — Benzin (display) + Manrope (body), loaded in lib/fonts.ts */
+  --ajet-font-body: var(--font-manrope), "Noto Sans", Arial, sans-serif;
+  /* TODO(assets): replace --font-benzin with the licensed Benzin family.
+     Until the WOFF2 files are supplied the display face falls back to Manrope,
+     styled wide + uppercase to stay inside the identity's voice. */
+  --ajet-font-display: var(--font-benzin, var(--font-manrope)), "Noto Sans", Arial, sans-serif;
+  --ajet-tracking-display: 0.015em;
+  --ajet-tracking-wide: 0.18em;
+}
